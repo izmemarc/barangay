@@ -48,6 +48,8 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_KEY=${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
           PHILSMS_API_TOKEN=${{ secrets.PHILSMS_API_TOKEN }}
           PHILSMS_SENDER_ID=${{ secrets.PHILSMS_SENDER_ID }}
           ENVEOF
@@ -114,6 +116,8 @@ jobs:
             GOOGLE_SERVICE_ACCOUNT_KEY=${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }}
+            GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
             PHILSMS_API_TOKEN=${{ secrets.PHILSMS_API_TOKEN }}
             PHILSMS_SENDER_ID=${{ secrets.PHILSMS_SENDER_ID }}
             ENVEOF
