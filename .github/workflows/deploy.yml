@@ -1,0 +1,143 @@
+name: Deploy Site
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'Which site to deploy'
+        required: true
+        type: choice
+        options:
+          - banadero
+          # Add new sites here (must match sites/<name> folder and build script)
+
+# Port mapping — keep in sync with ecosystem.config.js
+# banadero: 3001
+# (add new sites here)
+
+env:
+  DEPLOY_DIR: /opt/barangay
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build site
+        run: pnpm build:${{ inputs.site }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Prepare standalone artifact
+        run: |
+          SITE=${{ inputs.site }}
+          STANDALONE=sites/$SITE/.next/standalone
+          STATIC=sites/$SITE/.next/static
+          PUBLIC=sites/$SITE/public
+
+          # Copy static assets and public files into standalone output
+          cp -r $STATIC $STANDALONE/sites/$SITE/.next/static
+          if [ -d "$PUBLIC" ]; then
+            cp -r $PUBLIC $STANDALONE/sites/$SITE/public
+          fi
+
+          # Include ecosystem config in the artifact
+          mkdir -p $STANDALONE/deployment
+          cp deployment/ecosystem.config.js $STANDALONE/deployment/
+
+          # Create tarball
+          tar -czf deploy-$SITE.tar.gz -C $STANDALONE .
+
+      - name: Upload to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: deploy-${{ inputs.site }}.tar.gz
+          target: /tmp/
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            SITE=${{ inputs.site }}
+            SITE_DIR=${{ env.DEPLOY_DIR }}/sites/$SITE
+            RELEASE_DIR=$SITE_DIR/release
+
+            # Ensure directories exist
+            mkdir -p $RELEASE_DIR $SITE_DIR/logs
+
+            # Extract new release (overwrites previous)
+            rm -rf $RELEASE_DIR/*
+            tar -xzf /tmp/deploy-$SITE.tar.gz -C $RELEASE_DIR
+            rm -f /tmp/deploy-$SITE.tar.gz
+
+            # Symlink persistent .env.local into the release
+            if [ -f "$SITE_DIR/.env.local" ]; then
+              ln -sf $SITE_DIR/.env.local $RELEASE_DIR/sites/$SITE/.env.local
+              echo "Linked .env.local"
+            else
+              echo "WARNING: No .env.local found at $SITE_DIR/.env.local"
+              echo "The site will not have runtime environment variables!"
+              exit 1
+            fi
+
+            # Copy ecosystem config
+            mkdir -p ${{ env.DEPLOY_DIR }}/deployment
+            # Use the ecosystem config from the release
+            cp $RELEASE_DIR/deployment/ecosystem.config.js ${{ env.DEPLOY_DIR }}/deployment/ecosystem.config.js 2>/dev/null || true
+
+            # Reload or start with PM2
+            if pm2 describe $SITE > /dev/null 2>&1; then
+              echo "Reloading $SITE..."
+              pm2 reload $SITE
+            else
+              echo "Starting $SITE for the first time..."
+              pm2 start ${{ env.DEPLOY_DIR }}/deployment/ecosystem.config.js --only $SITE
+              pm2 save
+            fi
+
+            # Health check
+            sleep 5
+            PORT=$(pm2 jq $SITE '[.pm2_env.PORT // .pm2_env.env.PORT]' 2>/dev/null | head -1 || echo "")
+
+            # Fallback: read port from ecosystem config
+            if [ -z "$PORT" ] || [ "$PORT" = "null" ]; then
+              case $SITE in
+                banadero) PORT=3001 ;;
+                *) PORT=3001 ;;
+              esac
+            fi
+
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://localhost:$PORT/api/oauth/health || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Health check PASSED (HTTP $HTTP_CODE)"
+            else
+              echo "Health check returned HTTP $HTTP_CODE"
+              echo "--- Recent logs ---"
+              pm2 logs $SITE --lines 20 --nostream
+              exit 1
+            fi

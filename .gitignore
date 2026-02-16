@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Next.js build
+.next/
+out/
+
+# Environment files
+.env.local
+.env.*.local
+
+# Deployment secrets
+deployment/server-config.txt
+deployment/servers.txt
+deploy.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Claude Code
+.claude/
+
+# Windows artifacts
+nul
+
+# Data files
+*.csv
+remaining-unmatched.txt
+unmatched-photos.txt
