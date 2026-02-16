@@ -1,5 +1,6 @@
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { readFileSync } from 'fs'
 import { config } from 'dotenv'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -7,9 +8,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 // Load shared env vars from monorepo root (site .env.local takes precedence)
 config({ path: resolve(__dirname, '../../.env.local') })
 
+// Load site-specific config (non-secret: template IDs, folder IDs, slug, etc.)
+const siteConfig = JSON.parse(readFileSync(resolve(__dirname, 'site.config.json'), 'utf-8'))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  env: siteConfig,
   // CRITICAL: Transpile workspace packages
   transpilePackages: ['@barangay/shared', '@barangay/ui'],
 

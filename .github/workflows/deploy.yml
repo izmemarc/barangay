@@ -39,11 +39,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create shared .env.local for build
+        run: |
+          cat > .env.local << 'ENVEOF'
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_KEY=${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          PHILSMS_API_TOKEN=${{ secrets.PHILSMS_API_TOKEN }}
+          PHILSMS_SENDER_ID=${{ secrets.PHILSMS_SENDER_ID }}
+          ENVEOF
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' .env.local
+
       - name: Build site
         run: pnpm build:${{ inputs.site }}
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Prepare standalone artifact
         run: |
@@ -94,15 +106,22 @@ jobs:
             tar -xzf /tmp/deploy-$SITE.tar.gz -C $RELEASE_DIR
             rm -f /tmp/deploy-$SITE.tar.gz
 
-            # Symlink persistent .env.local into the release
-            if [ -f "$SITE_DIR/.env.local" ]; then
-              ln -sf $SITE_DIR/.env.local $RELEASE_DIR/sites/$SITE/.env.local
-              echo "Linked .env.local"
-            else
-              echo "WARNING: No .env.local found at $SITE_DIR/.env.local"
-              echo "The site will not have runtime environment variables!"
-              exit 1
-            fi
+            # Write shared secrets .env.local (same for all sites)
+            cat > ${{ env.DEPLOY_DIR }}/shared.env.local << 'ENVEOF'
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            GOOGLE_SERVICE_ACCOUNT_KEY=${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            PHILSMS_API_TOKEN=${{ secrets.PHILSMS_API_TOKEN }}
+            PHILSMS_SENDER_ID=${{ secrets.PHILSMS_SENDER_ID }}
+            ENVEOF
+            sed -i 's/^            //' ${{ env.DEPLOY_DIR }}/shared.env.local
+
+            # Symlink shared .env.local into the release
+            ln -sf ${{ env.DEPLOY_DIR }}/shared.env.local $RELEASE_DIR/sites/$SITE/.env.local
+            echo "Linked shared .env.local"
 
             # Copy ecosystem config
             mkdir -p ${{ env.DEPLOY_DIR }}/deployment

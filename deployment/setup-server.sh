@@ -9,8 +9,7 @@ echo "=== Barangay Server Setup ==="
 
 # 1. Create directory structure
 echo "Creating directory structure..."
-mkdir -p $DEPLOY_DIR/sites/banadero/{release,logs}
-mkdir -p $DEPLOY_DIR/deployment
+mkdir -p $DEPLOY_DIR/{sites,deployment}
 
 # 2. Install Node.js (if not present)
 if ! command -v node &> /dev/null; then
@@ -47,38 +46,22 @@ echo ""
 echo "  2. Copy the PUBLIC key to this server:"
 echo "     cat deploy_key.pub >> ~/.ssh/authorized_keys"
 echo ""
-echo "  3. Add the PRIVATE key as a GitHub secret:"
-echo "     - Go to your repo -> Settings -> Secrets and variables -> Actions"
-echo "     - Add secret: SSH_PRIVATE_KEY = contents of deploy_key"
-echo "     - Add secret: SERVER_HOST = $(curl -s ifconfig.me 2>/dev/null || echo 'your-server-ip')"
-echo "     - Add secret: SERVER_USER = $(whoami)"
-echo "     - Add secret: NEXT_PUBLIC_SUPABASE_URL = your-supabase-url"
-echo "     - Add secret: NEXT_PUBLIC_SUPABASE_ANON_KEY = your-supabase-anon-key"
+echo "  3. Add these GitHub secrets (repo -> Settings -> Secrets -> Actions):"
+echo "     - SSH_PRIVATE_KEY          = contents of deploy_key"
+echo "     - SERVER_HOST              = $(curl -s ifconfig.me 2>/dev/null || echo 'your-server-ip')"
+echo "     - SERVER_USER              = $(whoami)"
+echo "     - NEXT_PUBLIC_SUPABASE_URL = your-supabase-url"
+echo "     - NEXT_PUBLIC_SUPABASE_ANON_KEY = your-supabase-anon-key"
+echo "     - SUPABASE_SERVICE_ROLE_KEY     = your-service-role-key"
+echo "     - GOOGLE_SERVICE_ACCOUNT_KEY    = your-base64-service-account-json"
+echo "     - GOOGLE_CLIENT_ID              = your-google-client-id"
+echo "     - GOOGLE_CLIENT_SECRET          = your-google-client-secret"
+echo "     - PHILSMS_API_TOKEN             = your-philsms-token"
+echo "     - PHILSMS_SENDER_ID             = PhilSMS"
 echo ""
-
-# 5. Reminder about .env.local
-echo "--- Environment Variables ---"
-echo "Place .env.local files for each site:"
-echo "  $DEPLOY_DIR/sites/banadero/.env.local"
-echo ""
-
-if [ -f "$DEPLOY_DIR/sites/banadero/.env.local" ]; then
-    echo "  banadero: .env.local EXISTS"
-else
-    echo "  banadero: .env.local MISSING — copy it before deploying!"
-fi
-
-# 6. Migrate from old structure (if exists)
-if [ -d "/root/barangay-monorepo/sites/banadero" ] && [ -f "/root/barangay-monorepo/sites/banadero/.env.local" ]; then
-    echo ""
-    echo "--- Found old deployment at /root/barangay-monorepo ---"
-    if [ ! -f "$DEPLOY_DIR/sites/banadero/.env.local" ]; then
-        cp /root/barangay-monorepo/sites/banadero/.env.local $DEPLOY_DIR/sites/banadero/.env.local
-        echo "  Copied .env.local from old deployment"
-    fi
-fi
-
+echo "  Site-specific config (template IDs, folder IDs, etc.) lives in"
+echo "  sites/<site>/site.config.json in the repo. No .env.local needed per site."
 echo ""
 echo "=== Setup complete ==="
-echo "Once secrets are configured, deploy from GitHub Actions:"
+echo "Deploy from GitHub Actions:"
 echo "  Actions -> Deploy Site -> Run workflow -> select site"
