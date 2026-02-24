@@ -100,11 +100,15 @@ export async function searchResidents(query: string, barangayId?: string, limit 
   const searchTerm = query.trim().toLowerCase()
   const terms = searchTerm.split(/\s+/)
 
+  // Escape special Supabase filter chars (commas, dots, parens) to prevent filter injection
+  const safeTerm = terms[0].replace(/[,.*()\\%_]/g, '')
+  if (!safeTerm) return []
+
   // Get candidates from database
   let queryBuilder = supabase
     .from('residents')
     .select('id, first_name, middle_name, last_name, purok, birthdate, photo_url')
-    .or(`first_name.ilike.%${terms[0]}%,last_name.ilike.%${terms[0]}%,middle_name.ilike.%${terms[0]}%`)
+    .or(`first_name.ilike.%${safeTerm}%,last_name.ilike.%${safeTerm}%,middle_name.ilike.%${safeTerm}%`)
     .limit(100)
 
   if (barangayId) {

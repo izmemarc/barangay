@@ -43,8 +43,14 @@ export function normalizePhoneNumber(phone: string): string | null {
 export async function sendSMS(recipient: string, message: string, senderId?: string) {
   const apiToken = process.env.PHILSMS_API_TOKEN
   const defaultSenderId = senderId || process.env.PHILSMS_SENDER_ID || 'PhilSMS'
+  const normalizedRecipient = normalizePhoneNumber(recipient)
 
-  console.log('[SMS] sendSMS called:', { recipient, senderId: defaultSenderId, messageLength: message.length })
+  console.log('[SMS] sendSMS called:', { recipient, normalizedRecipient, senderId: defaultSenderId, messageLength: message.length })
+
+  if (!normalizedRecipient) {
+    console.error('[SMS] Invalid phone number:', recipient)
+    return { success: false, error: 'Invalid phone number' }
+  }
 
   if (!apiToken) {
     console.error('[SMS] PhilSMS API token not configured')
@@ -61,7 +67,7 @@ export async function sendSMS(recipient: string, message: string, senderId?: str
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        recipient,
+        recipient: normalizedRecipient,
         sender_id: defaultSenderId,
         type: 'plain',
         message,
@@ -109,19 +115,7 @@ export async function notifyNewSubmission(type: string, name: string, purpose?: 
 }
 
 export async function notifyDocumentGenerated(contactNumber: string, name: string, clearanceType: string) {
-  const normalizedNumber = normalizePhoneNumber(contactNumber)
-
-  console.log('[SMS] notifyDocumentGenerated called:', {
-    contactNumber,
-    normalizedNumber,
-    name,
-    clearanceType
-  })
-
-  if (!normalizedNumber) {
-    console.error('[SMS] Invalid or too short contact number:', contactNumber)
-    return { success: false, error: 'Invalid contact number' }
-  }
+  console.log('[SMS] notifyDocumentGenerated called:', { contactNumber, name, clearanceType })
 
   const formattedType = clearanceType
     .split('-')
@@ -130,6 +124,5 @@ export async function notifyDocumentGenerated(contactNumber: string, name: strin
 
   const message = `Your ${formattedType} document has been printed. Please visit the barangay office to claim it.`
 
-  console.log('[SMS] Sending document notification to:', normalizedNumber)
-  return await sendSMS(normalizedNumber, message)
+  return await sendSMS(contactNumber, message)
 }

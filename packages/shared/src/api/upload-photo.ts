@@ -23,8 +23,24 @@ export async function uploadResidentPhoto({
   bucket,
   supabase,
 }: UploadPhotoParams): Promise<string> {
+  // Validate base64 data URI format (image/* MIME types only)
+  if (!base64Photo || !base64Photo.startsWith('data:image/')) {
+    throw new Error('Invalid photo: must be a base64 data URI with an image MIME type')
+  }
+
   const base64Data = base64Photo.replace(/^data:image\/\w+;base64,/, '')
+
+  // Reject if nothing left after stripping prefix, or contains non-base64 chars
+  if (!base64Data || !/^[A-Za-z0-9+/=]+$/.test(base64Data)) {
+    throw new Error('Invalid photo: malformed base64 data')
+  }
+
   const buffer = Buffer.from(base64Data, 'base64')
+
+  // Reject unreasonably large photos (10 MB)
+  if (buffer.length > 10 * 1024 * 1024) {
+    throw new Error('Photo too large: maximum 10 MB')
+  }
 
   const filename = buildPhotoFilename(lastName, firstName, middleName, suffix)
 

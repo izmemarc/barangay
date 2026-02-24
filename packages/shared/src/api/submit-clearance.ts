@@ -21,6 +21,7 @@ export async function handleSubmitClearance(request: Request) {
     })
 
     // If photo was captured, upload it to storage and update resident record
+    let photoWarning: string | undefined
     if (capturedPhoto && residentId) {
       console.log('[Photo] Starting upload process...')
       try {
@@ -56,10 +57,12 @@ export async function handleSubmitClearance(request: Request) {
             console.log('[Photo] Uploaded and saved to resident:', residentId)
           } catch (uploadErr) {
             console.error('[Photo] Upload error:', uploadErr)
+            photoWarning = 'Photo upload failed, but submission was saved.'
           }
         }
       } catch (photoError) {
         console.error('[Photo] Error processing photo:', photoError)
+        photoWarning = 'Photo processing failed, but submission was saved.'
       }
     }
 
@@ -90,7 +93,7 @@ export async function handleSubmitClearance(request: Request) {
       console.error('[SMS] Exception sending notification:', smsError)
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json({ data, ...(photoWarning && { warning: photoWarning }) })
   } catch (error) {
     console.error('[API] Error:', error)
     return NextResponse.json(

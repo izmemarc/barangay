@@ -267,9 +267,10 @@ export async function handleGenerateClearance(request: Request) {
       const facility = submission.form_data.facility || ''
 
       if (startTime && endTime && facility) {
-        // Parse time strings (format: "HH:MM")
-        const [startHour, startMin] = startTime.split(':').map(Number)
-        const [endHour, endMin] = endTime.split(':').map(Number)
+        // Parse time strings (format: "HH:MM") — validate format first
+        const timeRe = /^\d{1,2}:\d{2}$/
+        const [startHour, startMin] = timeRe.test(startTime) ? startTime.split(':').map(Number) : [NaN, NaN]
+        const [endHour, endMin] = timeRe.test(endTime) ? endTime.split(':').map(Number) : [NaN, NaN]
 
         // Calculate duration in minutes (guard against negative/zero/NaN)
         const startMinutes = startHour * 60 + startMin
