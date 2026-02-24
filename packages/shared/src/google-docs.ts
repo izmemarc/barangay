@@ -6,7 +6,7 @@ const SCOPES = [
 ]
 
 // Cached OAuth client — reused across generateClearanceDocument, insertPhotoIntoDocument, etc.
-let cachedAuthClient: ReturnType<typeof google.auth.OAuth2.prototype.constructor> | null = null
+let cachedAuthClient: InstanceType<typeof google.auth.OAuth2> | null = null
 
 export function getAuthClient() {
   if (cachedAuthClient) return cachedAuthClient

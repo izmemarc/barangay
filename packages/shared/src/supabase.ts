@@ -158,8 +158,9 @@ export function calculateAge(birthdate: string | null): number | null {
 }
 
 // Cached admin client (service role) — same pattern as barangay-config.ts
-let supabaseAdmin: ReturnType<typeof createClient> | null = null
-export function getSupabaseAdmin() {
+// Cast to `any` since we don't have generated Supabase DB types
+let supabaseAdmin: any = null
+export function getSupabaseAdmin(): any {
   if (!supabaseAdmin) {
     supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

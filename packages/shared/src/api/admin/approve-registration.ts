@@ -22,12 +22,8 @@ export async function handleApproveRegistration(request: Request) {
       .eq('id', registrationId)
       .single()
 
-    if (fetchError) {
-      return NextResponse.json({ error: 'Registration not found', details: fetchError.message }, { status: 404 })
-    }
-
-    if (!registration) {
-      return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
+    if (fetchError || !registration) {
+      return NextResponse.json({ error: 'Registration not found', details: fetchError?.message }, { status: 404 })
     }
 
     const { data: existing } = await supabase
