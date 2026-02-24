@@ -20,6 +20,17 @@ const ENV_TEMPLATES: Record<string, string | undefined> = {
   'barangay-id': process.env.BARANGAY_ID_TEMPLATE_ID,
 }
 
+// Per-type output folders — falls back to GOOGLE_DRIVE_OUTPUT_FOLDER_ID
+const ENV_OUTPUT_FOLDERS: Record<string, string | undefined> = {
+  barangay: process.env.BARANGAY_OUTPUT_FOLDER_ID,
+  business: process.env.BUSINESS_OUTPUT_FOLDER_ID,
+  blotter: process.env.BLOTTER_OUTPUT_FOLDER_ID,
+  facility: process.env.FACILITY_OUTPUT_FOLDER_ID,
+  'good-moral': process.env.GOOD_MORAL_OUTPUT_FOLDER_ID,
+  indigency: process.env.INDIGENCY_OUTPUT_FOLDER_ID,
+  residency: process.env.RESIDENCY_OUTPUT_FOLDER_ID,
+}
+
 async function boldTextInDocument(documentId: string, textToBold: string, auth: any): Promise<void> {
   try {
     const docs = google.docs({ version: 'v1', auth })
@@ -471,7 +482,7 @@ export async function handleGenerateClearance(request: Request) {
 
     // Template IDs from site .env.local
     const templateId = ENV_TEMPLATES[submission.clearance_type]
-    const outputFolderId = process.env.GOOGLE_DRIVE_OUTPUT_FOLDER_ID
+    const outputFolderId = ENV_OUTPUT_FOLDERS[submission.clearance_type] || process.env.GOOGLE_DRIVE_OUTPUT_FOLDER_ID
 
     if (!templateId) {
       return NextResponse.json({ error: `No template configured for "${submission.clearance_type}"` }, { status: 500 })

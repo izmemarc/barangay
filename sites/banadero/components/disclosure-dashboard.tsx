@@ -15,16 +15,15 @@ interface DisclosureDashboardProps {
 }
 
 export function DisclosureDashboard({ config }: DisclosureDashboardProps) {
-  // Use config disclosure links if available, otherwise use static defaults
-  const defaultItems: DashboardItem[] = [
-    { title: "BARANGAY BUDGET", year2025Link: "#", year2026Link: "#" },
-    { title: "ITEMIZED MONTHLY COLLECTIONS AND DISBURSEMENT", year2025Link: "#", year2026Link: "#" },
-    { title: "20% COMPONENT OF THE IRA UTILIZATION", year2025Link: "#", year2026Link: "#" },
-    { title: "ANNUAL PROCUREMENT PLAN OR PROCUREMENT LIST", year2025Link: "#", year2026Link: "#" },
-    { title: "LIST OF NOTICES AND AWARD", year2025Link: "#", year2026Link: "#" },
-    { title: "SUMMARY OF INCOME AND EXPENDITURE", year2025Link: "#", year2026Link: "#" },
+  // Read disclosure links from site.config.json (injected via next.config.mjs env)
+  const dashboardItems: DashboardItem[] = [
+    { title: "BARANGAY BUDGET", year2025Link: process.env.DISCLOSURE_BARANGAY_BUDGET_2025, year2026Link: process.env.DISCLOSURE_BARANGAY_BUDGET_2026 },
+    { title: "ITEMIZED MONTHLY COLLECTIONS AND DISBURSEMENT", year2025Link: process.env.DISCLOSURE_ITEMIZED_MONTHLY_2025, year2026Link: process.env.DISCLOSURE_ITEMIZED_MONTHLY_2026 },
+    { title: "20% COMPONENT OF THE IRA UTILIZATION", year2025Link: process.env.DISCLOSURE_IRA_UTILIZATION_2025, year2026Link: process.env.DISCLOSURE_IRA_UTILIZATION_2026 },
+    { title: "ANNUAL PROCUREMENT PLAN OR PROCUREMENT LIST", year2025Link: process.env.DISCLOSURE_PROCUREMENT_2025, year2026Link: process.env.DISCLOSURE_PROCUREMENT_2026 },
+    { title: "LIST OF NOTICES AND AWARD", year2025Link: process.env.DISCLOSURE_NOTICES_AWARD_2025, year2026Link: process.env.DISCLOSURE_NOTICES_AWARD_2026 },
+    { title: "SUMMARY OF INCOME AND EXPENDITURE", year2025Link: process.env.DISCLOSURE_INCOME_EXPENDITURE_2025, year2026Link: process.env.DISCLOSURE_INCOME_EXPENDITURE_2026 },
   ]
-  const dashboardItems: DashboardItem[] = (config?.disclosure_links?.length ? config.disclosure_links : defaultItems) as DashboardItem[]
 
   return (
     <section 

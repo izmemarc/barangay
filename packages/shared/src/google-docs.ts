@@ -59,7 +59,8 @@ export async function generateClearanceDocument(
           fileId: templateId,
           requestBody: {
             name: fileName,
-            parents: [outputFolderId]
+            parents: [outputFolderId],
+            mimeType: 'application/vnd.google-apps.document'
           },
           fields: 'id'
         })

@@ -1,2 +1,2 @@
 import { handleOAuthSetup } from '@barangay/shared/api'
-export const POST = handleOAuthSetup
+export const GET = handleOAuthSetup
