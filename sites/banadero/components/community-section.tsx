@@ -140,6 +140,9 @@ export function CommunitySection({ config }: CommunitySectionProps) {
       
       if (response.ok) {
         setBookings(result.data || [])
+      } else {
+        console.error('Failed to fetch facility bookings:', result.error)
+        setBookings([])
       }
     } catch (error) {
       console.error('Error fetching facility bookings:', error)

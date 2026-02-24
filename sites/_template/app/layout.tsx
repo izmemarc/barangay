@@ -35,6 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
       apple: '/logo.png',
       shortcut: '/logo.png',
     },
+    other: {
+      'preconnect': 'https://fonts.googleapis.com',
+      'dns-prefetch': 'https://fonts.gstatic.com',
+    },
   };
 }
 
@@ -50,12 +54,27 @@ export default async function RootLayout({
   const primaryColor = config?.primary_color || '#0007C6';
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/webp" href="/logo.webp" />
         <link rel="icon" type="image/png" href="/logo.png" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <style dangerouslySetInnerHTML={{ __html: `:root { --barangay-primary: ${primaryColor}; }` }} />
+        {/* Dynamic zoom: scales 1440px design to fit any desktop viewport */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            function setZoom(){
+              var w=window.innerWidth;
+              if(w<900){document.documentElement.style.zoom='';return}
+              var z=0.0005*w-0.03;
+              if(z>1.25)z=1.25;
+              if(z<0.4)z=0.4;
+              document.documentElement.style.zoom=z;
+            }
+            setZoom();
+            window.addEventListener('resize',setZoom);
+          })();
+        `}} />
       </head>
       <body className="font-sans" style={{...fontVariables, backgroundColor: '#F9FAFB'}}>
         <div id="modal-root"></div>

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from './supabase'
 
 export interface BarangayConfig {
   id: string
@@ -32,17 +32,6 @@ export interface BarangayConfig {
 const cache = new Map<string, { config: BarangayConfig; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
-let supabaseAdmin: ReturnType<typeof createClient> | null = null
-function getSupabaseAdminClient() {
-  if (!supabaseAdmin) {
-    supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-  }
-  return supabaseAdmin
-}
-
 export async function getBarangayConfig(host: string): Promise<BarangayConfig | null> {
   // Check for BARANGAY_SLUG env override (useful for monorepo local dev)
   const slugOverride = process.env.BARANGAY_SLUG
@@ -52,7 +41,7 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
       return cached.config
     }
 
-    const { data, error } = await getSupabaseAdminClient()
+    const { data, error } = await getSupabaseAdmin()
       .from('barangays')
       .select('*')
       .eq('slug', slugOverride)
@@ -75,7 +64,7 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
   }
 
   // Fetch from Supabase
-  const { data, error } = await getSupabaseAdminClient()
+  const { data, error } = await getSupabaseAdmin()
     .from('barangays')
     .select('*')
     .eq('domain', cleanDomain)
@@ -84,7 +73,7 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
 
   if (error || !data) {
     // Fallback: try matching by slug (useful for localhost dev)
-    const { data: slugData, error: slugError } = await getSupabaseAdminClient()
+    const { data: slugData, error: slugError } = await getSupabaseAdmin()
       .from('barangays')
       .select('*')
       .eq('is_active', true)

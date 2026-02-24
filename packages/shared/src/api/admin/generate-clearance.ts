@@ -271,14 +271,15 @@ export async function handleGenerateClearance(request: Request) {
         const [startHour, startMin] = startTime.split(':').map(Number)
         const [endHour, endMin] = endTime.split(':').map(Number)
 
-        // Calculate duration in minutes
+        // Calculate duration in minutes (guard against negative/zero/NaN)
         const startMinutes = startHour * 60 + startMin
         const endMinutes = endHour * 60 + endMin
         const durationMinutes = endMinutes - startMinutes
 
-        // Round up to nearest hour (any partial hour = full hour)
-        // Examples: 1:30 = 2 hours, 2:01 = 3 hours, 3:00 = 3 hours
-        const hours = Math.ceil(durationMinutes / 60)
+        // Round up to nearest hour, minimum 1 hour
+        const hours = isNaN(durationMinutes) || durationMinutes <= 0
+          ? 1
+          : Math.ceil(durationMinutes / 60)
 
         // Extract rate from facility selection
         // "Basketball Court Daytime (500 php/hour)" -> 500

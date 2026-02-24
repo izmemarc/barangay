@@ -455,7 +455,7 @@ export function AdminClient({ config }: AdminClientProps) {
         title: 'Status updated',
         description: (
           <span>
-            The submission has been <span className="text-red-600 font-semibold">rejected</span>.
+            The submission has been <span className={status === 'rejected' ? 'text-red-600 font-semibold' : 'font-semibold'}>{status}</span>.
           </span>
         ),
       })
