@@ -27,10 +27,10 @@ export async function handleOAuthHealth() {
       expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : 'unknown'
     })
   } catch (error: any) {
+    console.error('[OAuth Health] Token validation failed:', error.message)
     return NextResponse.json({
       valid: false,
-      error: error.message || 'Token validation failed',
-      details: error.code === 400 ? 'Token expired or revoked - please regenerate' : error.message
+      error: error.code === 400 ? 'Token expired or revoked - please regenerate' : 'Token validation failed'
     }, { status: 400 })
   }
 }

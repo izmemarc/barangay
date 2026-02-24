@@ -143,7 +143,7 @@ export async function insertPhotoIntoDocument(
     return false
   }
 
-  console.log(`[Photo] Inserting photo: ${photoUrl}`)
+  console.log('[Photo] Inserting photo into document')
 
   // Get document content to locate placeholder
   const doc = await docs.documents.get({ documentId })

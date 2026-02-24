@@ -3,6 +3,22 @@ import { google } from 'googleapis'
 import { promises as fs } from 'fs'
 import path from 'path'
 
+function getValidatedRedirectUri(request: Request): string {
+  const host = request.headers.get('x-barangay-host') || request.headers.get('host') || ''
+  const cleanHost = host.split(':')[0].replace(/[^a-zA-Z0-9.-]/g, '')
+
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI
+  }
+
+  if (cleanHost === 'localhost' || cleanHost.startsWith('127.')) {
+    const port = host.split(':')[1] || '3001'
+    return `http://${cleanHost}:${port}/api/oauth/callback`
+  }
+
+  throw new Error(`Unrecognized host for OAuth redirect: ${cleanHost}`)
+}
+
 export async function handleOAuthCallback(request: Request) {
   try {
     const url = new URL(request.url)
@@ -12,9 +28,7 @@ export async function handleOAuthCallback(request: Request) {
       return NextResponse.json({ error: 'No authorization code' }, { status: 400 })
     }
 
-    const host = request.headers.get('x-barangay-host') || request.headers.get('host') || 'localhost:3001'
-    const protocol = host.includes('localhost') ? 'http' : 'https'
-    const redirectUri = `${protocol}://${host}/api/oauth/callback`
+    const redirectUri = getValidatedRedirectUri(request)
 
     const clientId = process.env.GOOGLE_CLIENT_ID
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET
@@ -29,6 +43,8 @@ export async function handleOAuthCallback(request: Request) {
         'No refresh token returned. Google only gives a refresh token on first consent or when you use prompt=consent. Try revoking access at <a href="https://myaccount.google.com/permissions">Google Permissions</a> and try again.',
         'error'), { headers: { 'Content-Type': 'text/html' } })
     }
+
+    console.log('[OAuth Callback] Refresh token obtained. Attempting auto-save...')
 
     let saved = false
     try {
@@ -52,14 +68,14 @@ export async function handleOAuthCallback(request: Request) {
 
     const statusMsg = saved
       ? 'Token saved to .env.local automatically.<br>Now run <code>update-token.ps1</code> to push it to the server, then restart your dev server.'
-      : `Could not auto-save. Manually add this to .env.local:<br><code>GOOGLE_REFRESH_TOKEN=${refreshToken}</code>`
+      : 'Could not auto-save. Check server logs and manually update .env.local with the new refresh token.'
 
     return new Response(page('Token Refreshed', statusMsg, 'success'), {
       headers: { 'Content-Type': 'text/html' },
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(page('OAuth Error', message, 'error'), {
+    console.error('[OAuth Callback] Error:', error)
+    return new Response(page('OAuth Error', 'Token exchange failed. Please try again or check server logs.', 'error'), {
       status: 500,
       headers: { 'Content-Type': 'text/html' },
     })

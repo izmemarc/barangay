@@ -45,10 +45,10 @@ export async function sendSMS(recipient: string, message: string, senderId?: str
   const defaultSenderId = senderId || process.env.PHILSMS_SENDER_ID || 'PhilSMS'
   const normalizedRecipient = normalizePhoneNumber(recipient)
 
-  console.log('[SMS] sendSMS called:', { recipient, normalizedRecipient, senderId: defaultSenderId, messageLength: message.length })
+  console.log('[SMS] sendSMS called:', { senderId: defaultSenderId, messageLength: message.length })
 
   if (!normalizedRecipient) {
-    console.error('[SMS] Invalid phone number:', recipient)
+    console.error('[SMS] Invalid phone number format')
     return { success: false, error: 'Invalid phone number' }
   }
 
@@ -75,7 +75,6 @@ export async function sendSMS(recipient: string, message: string, senderId?: str
     })
 
     const data = await response.json()
-    console.log('[SMS] API response:', data)
 
     if (data.status === 'success') {
       console.log('[SMS] SMS sent successfully')
@@ -93,7 +92,7 @@ export async function sendSMS(recipient: string, message: string, senderId?: str
 export async function notifyNewSubmission(type: string, name: string, purpose?: string) {
   const notificationNumber = process.env.PHILSMS_NOTIFICATION_NUMBER
 
-  console.log('[SMS] notifyNewSubmission called:', { type, name, purpose, notificationNumber })
+  console.log('[SMS] notifyNewSubmission called:', { type })
 
   if (!notificationNumber) {
     console.error('[SMS] Notification number not configured in environment variables')
@@ -110,12 +109,11 @@ export async function notifyNewSubmission(type: string, name: string, purpose?: 
     message += ` - Purpose: ${purpose}`
   }
 
-  console.log('[SMS] Sending message:', message)
   return await sendSMS(notificationNumber, message)
 }
 
 export async function notifyDocumentGenerated(contactNumber: string, name: string, clearanceType: string) {
-  console.log('[SMS] notifyDocumentGenerated called:', { contactNumber, name, clearanceType })
+  console.log('[SMS] notifyDocumentGenerated called:', { clearanceType })
 
   const formattedType = clearanceType
     .split('-')

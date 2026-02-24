@@ -61,13 +61,7 @@ export async function submitClearance(
   residentId?: string | null,
   barangayId?: string
 ) {
-  console.log('[Supabase] Inserting submission:', {
-    clearanceType,
-    name,
-    residentId,
-    barangayId,
-    formData
-  })
+  console.log('[Supabase] Inserting submission:', { clearanceType, hasResidentId: !!residentId })
 
   const insertData: Record<string, any> = {
     clearance_type: clearanceType,
@@ -89,7 +83,7 @@ export async function submitClearance(
     throw error
   }
 
-  console.log('[Supabase] Insert success:', data)
+  console.log('[Supabase] Insert success')
   return data
 }
 
@@ -166,10 +160,12 @@ export function calculateAge(birthdate: string | null): number | null {
 let supabaseAdmin: any = null
 export function getSupabaseAdmin(): any {
   if (!supabaseAdmin) {
-    supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) {
+      throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — cannot create admin client')
+    }
+    supabaseAdmin = createClient(url, key)
   }
   return supabaseAdmin
 }

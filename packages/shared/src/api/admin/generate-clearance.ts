@@ -588,7 +588,7 @@ export async function handleGenerateClearance(request: Request) {
         console.log('[SMS] Attempting to send document notification...')
         const smsResult = await notifyDocumentGenerated(contactNumber, submission.name, submission.clearance_type)
         if (smsResult?.success) {
-          console.log('[SMS] Document notification sent successfully to:', contactNumber)
+          console.log('[SMS] Document notification sent successfully')
         } else {
           console.error('[SMS] Failed to send document notification:', smsResult?.error)
         }
@@ -606,28 +606,21 @@ export async function handleGenerateClearance(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('=== ERROR GENERATING CLEARANCE ===')
-    console.error('Error:', error)
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace')
-    console.error('===================================')
+    console.error('[Generate Clearance] Error:', error)
 
-    // Provide more specific error messages
+    // Provide specific but safe error messages
     let errorMessage = 'Failed to generate document'
-    let errorDetails = error instanceof Error ? error.message : 'Unknown error'
 
     if (error?.code === 400 || error?.message?.includes('invalid_grant')) {
       errorMessage = 'Google OAuth token expired. Please re-authenticate at /api/oauth/setup'
-      errorDetails = 'invalid_grant - token expired or revoked'
     } else if (error?.code === 403) {
       errorMessage = 'Google API permission denied. Check template/folder sharing.'
-      errorDetails = error.message
     } else if (error?.code === 404) {
       errorMessage = 'Google template or folder not found. Check template IDs.'
-      errorDetails = error.message
     }
 
     return NextResponse.json(
-      { error: errorMessage, details: errorDetails },
+      { error: errorMessage },
       { status: 500 }
     )
   }

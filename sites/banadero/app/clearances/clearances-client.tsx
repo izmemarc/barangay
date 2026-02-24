@@ -245,7 +245,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'user', width: 640, height: 640 } 
       })
-      console.log('[Camera] Stream obtained:', stream)
+      console.log('[Camera] Stream obtained')
       streamRef.current = stream
       
       // Wait for video element to be in DOM
@@ -756,13 +756,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                       }
 
       // Submit clearance to Supabase via API (includes SMS notification)
-      console.log('[Clearance] Submitting:', { 
-        type: selectedType, 
-        name: formData.name, 
-        residentId: selectedResidentId,
-        formData,
-        hasCapturedPhoto: !!capturedPhoto
-      })
+      console.log('[Clearance] Submitting:', { type: selectedType, hasCapturedPhoto: !!capturedPhoto })
       
       const response = await fetch('/api/submit-clearance', {
         method: 'POST',

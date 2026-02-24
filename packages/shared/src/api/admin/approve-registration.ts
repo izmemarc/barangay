@@ -5,9 +5,7 @@ import { getBarangayConfig } from '../../barangay-config'
 export async function handleApproveRegistration(request: Request) {
   const supabase = getSupabaseAdmin()
   try {
-    console.log('[Approve Registration] Starting approval process...')
     const { registrationId, processedBy } = await request.json()
-    console.log('[Approve Registration] Registration ID:', registrationId)
 
     const host = request.headers.get('x-barangay-host') || request.headers.get('host') || ''
     const barangayConfig = await getBarangayConfig(host)
@@ -23,7 +21,8 @@ export async function handleApproveRegistration(request: Request) {
       .single()
 
     if (fetchError || !registration) {
-      return NextResponse.json({ error: 'Registration not found', details: fetchError?.message }, { status: 404 })
+      console.error('[Approve Registration] Fetch error:', fetchError)
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
     }
 
     const { data: existing } = await supabase
@@ -76,7 +75,7 @@ export async function handleApproveRegistration(request: Request) {
   } catch (error) {
     console.error('[Approve Registration] ERROR:', error)
     return NextResponse.json(
-      { error: 'Failed to approve registration', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to approve registration' },
       { status: 500 }
     )
   }

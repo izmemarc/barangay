@@ -4,8 +4,6 @@ import { getBarangayConfig } from '../../barangay-config'
 
 export async function handleGetRegistrations(request: Request) {
   const supabase = getSupabaseAdmin()
-  const startTime = Date.now()
-  console.log('[API] GET /api/admin/registrations started')
   try {
     const host = request.headers.get('x-barangay-host') || request.headers.get('host') || ''
     const barangayConfig = await getBarangayConfig(host)
@@ -29,19 +27,18 @@ export async function handleGetRegistrations(request: Request) {
       query = query.eq('status', status)
     }
 
-    const queryStart = Date.now()
     const { data, error, count } = await query
-    console.log(`[API] Supabase query took ${Date.now() - queryStart}ms`)
 
     if (error) throw error
 
-    console.log(`[API] GET /api/admin/registrations completed in ${Date.now() - startTime}ms, rows: ${data?.length || 0}`)
     return NextResponse.json({ data, total: count, limit, offset })
   } catch (error) {
     console.error('[API] Error fetching registrations:', error)
     return NextResponse.json({ error: 'Failed to fetch registrations' }, { status: 500 })
   }
 }
+
+const VALID_REG_STATUSES = ['pending', 'approved', 'rejected'] as const
 
 export async function handlePatchRegistration(request: Request) {
   const supabase = getSupabaseAdmin()
@@ -50,6 +47,10 @@ export async function handlePatchRegistration(request: Request) {
 
     if (!registrationId || !status) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (!VALID_REG_STATUSES.includes(status)) {
+      return NextResponse.json({ error: `Invalid status. Must be one of: ${VALID_REG_STATUSES.join(', ')}` }, { status: 400 })
     }
 
     const { error } = await supabase

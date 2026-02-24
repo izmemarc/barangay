@@ -135,7 +135,7 @@ export function AdminClient({ config }: AdminClientProps) {
     let submissionsChannel: ReturnType<typeof supabase.channel> | null = null
     let registrationsChannel: ReturnType<typeof supabase.channel> | null = null
 
-    console.log('[Realtime] Setting up subscriptions...')
+    // Set up realtime subscriptions
 
     // Subscribe to clearance_submissions changes
     submissionsChannel = supabase
@@ -148,7 +148,7 @@ export function AdminClient({ config }: AdminClientProps) {
           table: 'clearance_submissions',
         },
         (payload) => {
-          console.log('[Realtime] Clearance submission change detected:', payload)
+          console.log('[Realtime] Clearance submission change detected')
           const currentFilter = filterRef.current
           const newRecord = payload.new as any
           const oldRecord = payload.old as any
@@ -192,15 +192,12 @@ export function AdminClient({ config }: AdminClientProps) {
                 newRecord?.status === currentFilter ||
                 oldRecord?.status === currentFilter ||
                 (oldRecord?.status !== newRecord?.status)) {
-              console.log('[Realtime] Fetching submissions due to change')
               fetchSubmissions(true) // silent fetch
             }
           }
         }
       )
-      .subscribe((status) => {
-        console.log('[Realtime] Clearance submissions subscription status:', status)
-      })
+      .subscribe()
 
     // Subscribe to pending_registrations changes
     registrationsChannel = supabase
@@ -213,26 +210,17 @@ export function AdminClient({ config }: AdminClientProps) {
           table: 'pending_registrations',
         },
         (payload: any) => {
-          console.log('[Realtime] Registration change detected:', payload)
-          console.log('[Realtime] Full payload:', JSON.stringify(payload, null, 2))
+          console.log('[Realtime] Registration change detected')
           const currentFilter = filterRef.current
           const newRecord = payload.new
           const oldRecord = payload.old
           const eventType = payload.eventType || payload.type || (payload as any).eventType
 
-          console.log('[Realtime] Event type:', eventType, 'Has new:', !!newRecord, 'Has old:', !!oldRecord)
-          console.log('[Realtime] Active tab:', activeTabRef.current, 'Current filter:', currentFilter)
-
           // Handle INSERT - add new item with animation
           if (eventType === 'INSERT' || (!oldRecord && newRecord)) {
-            console.log('[Realtime] Processing INSERT for registration')
             setAllRegistrations(prev => {
               // Check if already exists
-              if (prev.some(r => r.id === newRecord.id)) {
-                console.log('[Realtime] Registration already exists, skipping')
-                return prev
-              }
-              console.log('[Realtime] Adding new registration:', newRecord.id)
+              if (prev.some(r => r.id === newRecord.id)) return prev
               // Add to beginning
               const updated = [newRecord as Registration, ...prev]
               // Mark as new for animation if it matches current filter
@@ -264,34 +252,23 @@ export function AdminClient({ config }: AdminClientProps) {
           if (eventType === 'UPDATE' || eventType === 'DELETE' || (oldRecord && newRecord)) {
             // Skip if this item is being animated out
             const recordId = newRecord?.id || oldRecord?.id
-            if (recordId && removingRegistrationsRef.current.has(recordId)) {
-              console.log('[Realtime] Skipping update for item being removed:', recordId)
-              return
-            }
+            if (recordId && removingRegistrationsRef.current.has(recordId)) return
             if (currentFilter === 'all' ||
                 newRecord?.status === currentFilter ||
                 oldRecord?.status === currentFilter ||
                 (oldRecord?.status !== newRecord?.status)) {
-              console.log('[Realtime] Fetching registrations due to change')
               fetchRegistrations(true) // silent fetch
             }
           }
         }
       )
       .subscribe((status, err) => {
-        console.log('[Realtime] Registrations subscription status:', status)
         if (err) {
-          console.error('[Realtime] Registrations subscription error:', err)
-        }
-        if (status === 'SUBSCRIBED') {
-          console.log('[Realtime] Successfully subscribed to pending_registrations')
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[Realtime] Channel error - check if table has realtime enabled')
+          console.error('[Realtime] Subscription error:', err)
         }
       })
 
     return () => {
-      console.log('[Realtime] Cleaning up subscriptions')
       if (submissionsChannel) {
         supabase.removeChannel(submissionsChannel)
       }

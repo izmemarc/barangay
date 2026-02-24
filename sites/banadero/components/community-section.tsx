@@ -113,7 +113,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
           filter: 'clearance_type=eq.facility'
         },
         (payload) => {
-          console.log('[Facility Bookings] Change detected:', payload)
+          console.log('[Facility Bookings] Change detected')
           fetchBookings() // Refetch when there's a change
         }
       )
