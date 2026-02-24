@@ -45,6 +45,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                         sizes="(max-width: 1024px) 10rem, 16vw"
                         className="object-contain"
                         priority
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     </div>
                   </div>
@@ -242,6 +243,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                   sizes="(max-width: 640px) 80vw, (max-width: 768px) 14rem, (max-width: 1024px) 18rem, 20rem"
                   className="w-4/5 h-auto mx-auto xs:w-56 xs:h-64 sm:w-64 sm:h-72 md:w-72 md:h-80 lg:w-80 lg:h-88 xl:w-88 xl:h-104 object-cover object-[center_40%] rounded-lg shadow-2xl"
                   priority
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </div>
 
@@ -264,6 +266,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                   sizes="(max-width: 1024px) 100vw, 33vw"
                   className="w-full h-auto object-contain"
                   priority
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </div>
               <h3 className="text-primary text-sm sm:text-base md:text-lg font-semibold text-center mt-3 px-2">

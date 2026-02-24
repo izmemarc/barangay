@@ -288,7 +288,8 @@ export async function handleGenerateClearance(request: Request) {
         let ratePerHour = 500 // default
         const rateMatch = facility.match(/\((\d+)\s*php\/hour\)/)
         if (rateMatch) {
-          ratePerHour = parseInt(rateMatch[1])
+          const parsed = parseInt(rateMatch[1], 10)
+          ratePerHour = parsed > 0 && parsed <= 50000 ? parsed : 500
         }
 
         const totalAmount = ratePerHour * hours

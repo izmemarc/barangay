@@ -20,7 +20,8 @@ const NAV_LINKS = [
 export function Header({ config }: HeaderProps) {
   const barangayName = config ? `${config.name}, ${config.city}` : 'Bañadero, Legazpi City'
   const barangayTagline = config?.tagline || 'Serving Our Community'
-  const primaryColor = config?.primary_color || '#0007C6'
+  const rawColor = config?.primary_color || '#0007C6'
+  const primaryColor = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#0007C6'
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()

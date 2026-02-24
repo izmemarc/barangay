@@ -53,8 +53,9 @@ export default async function RootLayout({
   const host = headersList.get('x-barangay-host') || headersList.get('host') || '';
   const config = await getBarangayConfig(host);
 
-  // Inject primary color as CSS variable
-  const primaryColor = config?.primary_color || '#0007C6';
+  // Inject primary color as CSS variable (validate hex to prevent CSS injection)
+  const rawColor = config?.primary_color || '#0007C6';
+  const primaryColor = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#0007C6';
 
   return (
     <html lang="en" suppressHydrationWarning>

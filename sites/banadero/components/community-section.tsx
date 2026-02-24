@@ -93,7 +93,8 @@ export function CommunitySection({ config }: CommunitySectionProps) {
   const officials = (config?.officials?.length ? config.officials : defaultOfficials) as typeof defaultOfficials
   const events: Array<{ id: number; title: string; date: string; time: string; location: string; type: string }> = []
   const feedbackUrl = config?.google_form_urls?.feedback || '#'
-  const primaryColor = config?.primary_color || '#0007C6'
+  const rawColor = config?.primary_color || '#0007C6'
+  const primaryColor = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#0007C6'
   const [bookings, setBookings] = useState<FacilityBooking[]>([])
   const [loading, setLoading] = useState(true)
 

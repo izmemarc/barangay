@@ -681,7 +681,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         
         // Redirect to home page after 5 seconds
         setTimeout(() => {
-          window.location.href = '/'
+          router.push('/')
         }, 5000)
         return
       }
@@ -712,7 +712,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         
         // Redirect to home page after 5 seconds
         setTimeout(() => {
-          window.location.href = '/'
+          router.push('/')
         }, 5000)
         return
       }
@@ -743,7 +743,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         
         // Redirect to home page after 5 seconds
         setTimeout(() => {
-          window.location.href = '/'
+          router.push('/')
         }, 5000)
         return
       }
@@ -837,9 +837,12 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                 return (
                   <div
                     key={type.id}
-                    className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 cursor-pointer rounded-lg border flex flex-col items-center justify-center text-center p-5"
+                    role="button"
+                    tabIndex={0}
+                    className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 cursor-pointer rounded-lg border flex flex-col items-center justify-center text-center p-5 focus:outline-none focus:ring-2 focus:ring-primary"
                     style={{ width: '170px', height: '170px' }}
                     onClick={() => setSelectedType(type.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedType(type.id) } }}
                   >
                     <div className="flex items-center justify-center flex-shrink-0 mb-3">
                       <Icon className="h-14 w-14 text-primary" />
@@ -1103,7 +1106,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                     )}
 
                     {/* Dynamic form fields based on selected type */}
-                    {formFields.map((field) => (
+                    {formFields.map((field, fieldIndex) => (
                       <div key={field.id} className="space-y-2" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                         <label htmlFor={field.id} className="block text-sm font-semibold text-foreground">
                           {field.label}
@@ -1116,6 +1119,8 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                             value={formData[field.id] || ''}
                             onChange={(e) => handleInputChange(field.id, e.target.value)}
                             rows={4}
+                            maxLength={2000}
+                            autoFocus={fieldIndex === 0}
                             className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background resize-vertical focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                             style={{ boxSizing: 'border-box', wordWrap: 'break-word', overflowWrap: 'break-word' }}
                             placeholder={`Enter ${field.label.toLowerCase()}`}
@@ -1157,6 +1162,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                                       value={formData.vegetableSeedsDetails || ''}
                                       onChange={(e) => handleInputChange('vegetableSeedsDetails', e.target.value)}
                                       rows={2}
+                                      maxLength={2000}
                                       className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background resize-vertical focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                                       style={{ boxSizing: 'border-box', wordWrap: 'break-word', overflowWrap: 'break-word' }}
                                       placeholder="Please specify other vegetable seeds..."
@@ -1193,6 +1199,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                                 value={formData[`${field.id}Details`] || ''}
                                 onChange={(e) => handleInputChange(`${field.id}Details`, e.target.value)}
                                 rows={3}
+                                maxLength={2000}
                                 className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background resize-vertical focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                                 style={{ boxSizing: 'border-box', wordWrap: 'break-word', overflowWrap: 'break-word' }}
                                 placeholder="Please specify..."
@@ -1318,6 +1325,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                                 (e.target as HTMLInputElement).showPicker()
                               }
                             }}
+                            autoFocus={fieldIndex === 0}
                             className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors cursor-pointer"
                             style={{ boxSizing: 'border-box' }}
                             placeholder={'placeholder' in field ? field.placeholder : `Enter ${field.label.toLowerCase()}`}

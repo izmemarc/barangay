@@ -12,12 +12,14 @@ export async function handleGetRegistrations(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50') || 50, 1), 200)
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0') || 0, 0)
 
     let query = supabase
       .from('pending_registrations')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(100)
+      .range(offset, offset + limit - 1)
 
     if (barangayConfig) {
       query = query.eq('barangay_id', barangayConfig.id)
@@ -28,13 +30,13 @@ export async function handleGetRegistrations(request: Request) {
     }
 
     const queryStart = Date.now()
-    const { data, error } = await query
+    const { data, error, count } = await query
     console.log(`[API] Supabase query took ${Date.now() - queryStart}ms`)
 
     if (error) throw error
 
     console.log(`[API] GET /api/admin/registrations completed in ${Date.now() - startTime}ms, rows: ${data?.length || 0}`)
-    return NextResponse.json({ data })
+    return NextResponse.json({ data, total: count, limit, offset })
   } catch (error) {
     console.error('[API] Error fetching registrations:', error)
     return NextResponse.json({ error: 'Failed to fetch registrations' }, { status: 500 })

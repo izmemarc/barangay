@@ -24,9 +24,12 @@ export function ProjectCard({ project }: { project: Project }) {
   };
 
   return (
-    <Card 
-      className="bg-white/95 backdrop-blur-lg border-0 shadow-xl transition-all duration-300 h-full flex flex-col overflow-hidden p-0 group hover:shadow-2xl hover:scale-[1.02] cursor-pointer"
+    <Card
+      role="button"
+      tabIndex={0}
+      className="bg-white/95 backdrop-blur-lg border-0 shadow-xl transition-all duration-300 h-full flex flex-col overflow-hidden p-0 group hover:shadow-2xl hover:scale-[1.02] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
       onClick={handleCardClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick() } }}
     >
       <div className="relative h-48 sm:h-56 lg:h-64">
         <Image
@@ -36,6 +39,7 @@ export function ProjectCard({ project }: { project: Project }) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover"
           loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg' }}
         />
       </div>
       <CardHeader className="pb-2 px-4 sm:px-6">

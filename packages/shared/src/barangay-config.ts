@@ -54,8 +54,9 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
     }
   }
 
-  // Strip www. prefix and port
-  const cleanDomain = host.replace(/^www\./, '').split(':')[0]
+  // Strip www. prefix, port, and non-hostname characters
+  const cleanDomain = host.replace(/^www\./, '').split(':')[0].replace(/[^a-zA-Z0-9.-]/g, '')
+  if (!cleanDomain) return null
 
   // Check cache
   const cached = cache.get(cleanDomain)
@@ -63,7 +64,7 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
     return cached.config
   }
 
-  // Fetch from Supabase
+  // Fetch from Supabase by exact domain match
   const { data, error } = await getSupabaseAdmin()
     .from('barangays')
     .select('*')
@@ -72,18 +73,21 @@ export async function getBarangayConfig(host: string): Promise<BarangayConfig | 
     .single()
 
   if (error || !data) {
-    // Fallback: try matching by slug (useful for localhost dev)
-    const { data: slugData, error: slugError } = await getSupabaseAdmin()
-      .from('barangays')
-      .select('*')
-      .eq('is_active', true)
-      .limit(1)
-      .single()
+    // Fallback for localhost dev only
+    if (cleanDomain === 'localhost' || cleanDomain.startsWith('127.')) {
+      const { data: slugData, error: slugError } = await getSupabaseAdmin()
+        .from('barangays')
+        .select('*')
+        .eq('is_active', true)
+        .limit(1)
+        .single()
 
-    if (slugError || !slugData) return null
+      if (slugError || !slugData) return null
 
-    cache.set(cleanDomain, { config: slugData, expires: Date.now() + CACHE_TTL })
-    return slugData
+      cache.set(cleanDomain, { config: slugData, expires: Date.now() + CACHE_TTL })
+      return slugData
+    }
+    return null
   }
 
   cache.set(cleanDomain, { config: data, expires: Date.now() + CACHE_TTL })
