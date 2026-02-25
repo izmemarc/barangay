@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { Header } from '@/components/header'
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@barangay/ui'
-import { FileText, Download, CheckCircle, XCircle, Clock, UserPlus, Building2, AlertCircle, Calendar, CreditCard, FolderOpen } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Clock, UserPlus, Building2, AlertCircle, Calendar, CreditCard, FolderOpen, LogOut, Lock } from 'lucide-react'
 import { supabase } from '@barangay/shared'
 import type { BarangayConfig } from '@barangay/shared'
 
@@ -44,6 +44,10 @@ interface AdminClientProps {
 }
 
 export function AdminClient({ config }: AdminClientProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
   const [allSubmissions, setAllSubmissions] = useState<Submission[]>([])
   const [allRegistrations, setAllRegistrations] = useState<Registration[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -81,23 +85,32 @@ export function AdminClient({ config }: AdminClientProps) {
     activeTabRef.current = activeTab
   }, [filter, activeTab])
 
-  // Initial fetch
+  // Check auth on mount
   useEffect(() => {
+    fetch('/api/admin/login')
+      .then(res => setIsAuthenticated(res.ok))
+      .catch(() => setIsAuthenticated(false))
+  }, [])
+
+  // Initial fetch (only when authenticated)
+  useEffect(() => {
+    if (!isAuthenticated) return
     if (activeTab === 'registrations') {
       fetchRegistrations()
     } else {
       fetchSubmissions()
     }
-  }, [activeTab])
+  }, [activeTab, isAuthenticated])
 
   // Fetch all data when filter changes (background update)
   useEffect(() => {
+    if (!isAuthenticated) return
     if (activeTab === 'registrations') {
       fetchRegistrations(true)
     } else {
       fetchSubmissions(true)
     }
-  }, [filter])
+  }, [filter, isAuthenticated])
 
   // Get filtered submissions by category
   const getFilteredSubmissions = () => {
@@ -130,8 +143,9 @@ export function AdminClient({ config }: AdminClientProps) {
 
   const displaySubmissions = activeTab === 'registrations' ? [] : getFilteredSubmissions()
 
-  // Real-time subscriptions
+  // Real-time subscriptions (only when authenticated)
   useEffect(() => {
+    if (!isAuthenticated) return
     let submissionsChannel: ReturnType<typeof supabase.channel> | null = null
     let registrationsChannel: ReturnType<typeof supabase.channel> | null = null
 
@@ -276,13 +290,45 @@ export function AdminClient({ config }: AdminClientProps) {
         supabase.removeChannel(registrationsChannel)
       }
     }
-  }, [])
+  }, [isAuthenticated])
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setLoginLoading(true)
+    setLoginError('')
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: loginPassword }),
+      })
+      if (res.ok) {
+        setIsAuthenticated(true)
+        setLoginPassword('')
+      } else {
+        const data = await res.json()
+        setLoginError(data.error || 'Invalid password')
+      }
+    } catch {
+      setLoginError('Login failed')
+    } finally {
+      setLoginLoading(false)
+    }
+  }
+
+  async function handleLogout() {
+    await fetch('/api/admin/logout', { method: 'POST' })
+    setIsAuthenticated(false)
+    setAllSubmissions([])
+    setAllRegistrations([])
+  }
 
   async function fetchSubmissions(silent = false) {
     if (!silent) setError(null)
     try {
       // Fetch all submissions, filter client-side
       const response = await fetch(`/api/admin/submissions?status=all`)
+      if (response.status === 401) { setIsAuthenticated(false); return }
       const result = await response.json()
 
       if (!response.ok) throw new Error(result.error)
@@ -303,6 +349,7 @@ export function AdminClient({ config }: AdminClientProps) {
     try {
       // Fetch all registrations, filter client-side
       const response = await fetch(`/api/admin/registrations?status=all`)
+      if (response.status === 401) { setIsAuthenticated(false); return }
       const result = await response.json()
 
       if (!response.ok) throw new Error(result.error)
@@ -615,6 +662,62 @@ export function AdminClient({ config }: AdminClientProps) {
     )
   }
 
+  // Loading state
+  if (isAuthenticated === null) {
+    return (
+      <>
+        <Header config={config} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </>
+    )
+  }
+
+  // Login screen
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Header config={config} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+          <Card className="w-full max-w-md mx-4">
+          <CardHeader className="text-center pb-2 pt-6">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Lock className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="font-black text-primary leading-none tracking-tight" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.5rem)' }}>
+              Admin Panel
+            </h1>
+            <p className="text-gray-600 font-medium mt-2" style={{ fontSize: 'clamp(0.875rem, 1.5vw, 1rem)' }}>
+              Enter password to continue
+            </p>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  autoFocus
+                  className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              {loginError && (
+                <p className="text-sm text-red-600 font-medium">{loginError}</p>
+              )}
+              <Button type="submit" className="w-full py-3 text-base font-semibold" disabled={loginLoading || !loginPassword}>
+                {loginLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <Header config={config} />
@@ -624,9 +727,14 @@ export function AdminClient({ config }: AdminClientProps) {
             <h1 className="font-black text-primary leading-none tracking-tight" style={{fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', marginBottom: 'clamp(0.5rem, 1vh, 0.75rem)'}}>
               Admin Panel
             </h1>
-            <p className="text-gray-600 font-medium" style={{fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'}}>
-              Manage clearance requests and resident registrations
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-gray-600 font-medium" style={{fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'}}>
+                Manage clearance requests and resident registrations
+              </p>
+              <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 transition-colors" title="Logout">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Tabs */}

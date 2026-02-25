@@ -14,50 +14,8 @@ export async function handleApproveRegistration(request: Request) {
       return NextResponse.json({ error: 'Missing registrationId' }, { status: 400 })
     }
 
-    const { data: registration, error: fetchError } = await supabase
-      .from('pending_registrations')
-      .select('*')
-      .eq('id', registrationId)
-      .single()
-
-    if (fetchError || !registration) {
-      console.error('[Approve Registration] Fetch error:', fetchError)
-      return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
-    }
-
-    const { data: existing } = await supabase
-      .from('residents')
-      .select('id')
-      .ilike('first_name', registration.first_name)
-      .ilike('last_name', registration.last_name)
-      .eq('birthdate', registration.birthdate)
-      .maybeSingle()
-
-    if (existing) {
-      return NextResponse.json({ error: 'Duplicate resident already exists' }, { status: 409 })
-    }
-
-    const { error: insertError } = await supabase
-      .from('residents')
-      .insert({
-        first_name: registration.first_name,
-        middle_name: registration.middle_name,
-        last_name: registration.last_name,
-        suffix: registration.suffix || null,
-        birthdate: registration.birthdate,
-        age: registration.age,
-        gender: registration.gender,
-        civil_status: registration.civil_status,
-        citizenship: registration.citizenship,
-        purok: registration.purok,
-        contact: registration.contact || null,
-        photo_url: registration.photo_url || null,
-        barangay_id: barangayConfig?.id || null
-      })
-
-    if (insertError) throw insertError
-
-    const { error: updateError } = await supabase
+    // Atomically claim the registration: only succeed if status is still 'pending'
+    const { data: claimed, error: claimError } = await supabase
       .from('pending_registrations')
       .update({
         status: 'approved',
@@ -65,8 +23,64 @@ export async function handleApproveRegistration(request: Request) {
         processed_at: new Date().toISOString()
       })
       .eq('id', registrationId)
+      .eq('status', 'pending') // Only update if still pending — prevents race condition
+      .select()
+      .single()
 
-    if (updateError) throw updateError
+    if (claimError || !claimed) {
+      // Either not found or already processed by another admin
+      return NextResponse.json(
+        { error: 'Registration not found or already processed' },
+        { status: 409 }
+      )
+    }
+
+    // Check for duplicate resident before inserting
+    const { data: existing } = await supabase
+      .from('residents')
+      .select('id')
+      .ilike('first_name', claimed.first_name)
+      .ilike('last_name', claimed.last_name)
+      .eq('birthdate', claimed.birthdate)
+      .maybeSingle()
+
+    if (existing) {
+      // Revert status since we can't insert a duplicate
+      await supabase
+        .from('pending_registrations')
+        .update({ status: 'pending', processed_by: null, processed_at: null })
+        .eq('id', registrationId)
+
+      return NextResponse.json({ error: 'Duplicate resident already exists' }, { status: 409 })
+    }
+
+    const { error: insertError } = await supabase
+      .from('residents')
+      .insert({
+        first_name: claimed.first_name,
+        middle_name: claimed.middle_name,
+        last_name: claimed.last_name,
+        suffix: claimed.suffix || null,
+        birthdate: claimed.birthdate,
+        age: claimed.age,
+        gender: claimed.gender,
+        civil_status: claimed.civil_status,
+        citizenship: claimed.citizenship,
+        purok: claimed.purok,
+        contact: claimed.contact || null,
+        photo_url: claimed.photo_url || null,
+        barangay_id: barangayConfig?.id || null
+      })
+
+    if (insertError) {
+      // Revert the status change so it can be retried
+      await supabase
+        .from('pending_registrations')
+        .update({ status: 'pending', processed_by: null, processed_at: null })
+        .eq('id', registrationId)
+
+      throw insertError
+    }
 
     return NextResponse.json({
       success: true,

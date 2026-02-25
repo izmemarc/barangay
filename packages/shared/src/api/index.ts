@@ -5,6 +5,8 @@ export { handleGetRegistrations, handlePatchRegistration } from './admin/registr
 export { handleApproveRegistration } from './admin/approve-registration'
 export { handleGenerateClearance } from './admin/generate-clearance'
 export { handleGetFacilityBookings } from './admin/facility-bookings'
+export { handleAdminLogin } from './admin/login'
+export { handleAdminLogout } from './admin/logout'
 export { handleOAuthSetup } from './oauth/setup'
 export { handleOAuthCallback } from './oauth/callback'
 export { handleOAuthHealth } from './oauth/health'

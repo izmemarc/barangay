@@ -2,7 +2,7 @@ import { google } from 'googleapis'
 
 const SCOPES = [
   'https://www.googleapis.com/auth/documents',
-  'https://www.googleapis.com/auth/drive'
+  'https://www.googleapis.com/auth/drive.file'
 ]
 
 // Cached OAuth client — reused across generateClearanceDocument, insertPhotoIntoDocument, etc.
@@ -229,7 +229,7 @@ export async function insertPhotoIntoDocument(
 }
 
 // Helper to generate OAuth URL (run once to get refresh token)
-export function generateAuthUrl(redirectUri?: string) {
+export function generateAuthUrl(redirectUri?: string, state?: string) {
   const clientId = process.env.GOOGLE_CLIENT_ID || ''
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
   const uri = redirectUri || process.env.GOOGLE_REDIRECT_URI
@@ -239,7 +239,8 @@ export function generateAuthUrl(redirectUri?: string) {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',   // REQUIRED for durable refresh token
     prompt: 'consent',        // REQUIRED to force token refresh
-    scope: SCOPES
+    scope: SCOPES,
+    state,                    // CSRF protection
   })
 
   return { authUrl, oauth2Client }

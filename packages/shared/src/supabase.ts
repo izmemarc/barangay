@@ -101,7 +101,7 @@ export async function searchResidents(query: string, barangayId?: string, limit 
   // Get candidates from database
   let queryBuilder = supabase
     .from('residents')
-    .select('id, first_name, middle_name, last_name, purok, birthdate, photo_url')
+    .select('id, first_name, middle_name, last_name, suffix, purok, birthdate, age, gender, civil_status, citizenship, contact, photo_url')
     .or(`first_name.ilike.%${safeTerm}%,last_name.ilike.%${safeTerm}%,middle_name.ilike.%${safeTerm}%`)
     .limit(100)
 

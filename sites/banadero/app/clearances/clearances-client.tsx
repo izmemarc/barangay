@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@barangay/ui'
@@ -164,8 +165,14 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         const results = await searchResidents(nameQuery, config.id)
         setResidents(results as Resident[])
         setShowSuggestions(results.length > 0)
-        
-        // photo_url is already included in search results — no prefetch needed
+
+        // Prefetch photos for top results so they're instant when clicked
+        results.slice(0, 5).forEach((r: any) => {
+          if (r.photo_url) {
+            const img = new window.Image()
+            img.src = `/_next/image?url=${encodeURIComponent(r.photo_url)}&w=384&q=75`
+          }
+        })
       } else {
         setResidents([])
         setShowSuggestions(false)
@@ -213,29 +220,14 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
     setImageLoaded(false)
   }, [residentPhotoUrl])
 
-  // Update resident info when selectedResidentId changes
+  // Clear captured photo when resident changes and has no photo on file
   useEffect(() => {
     if (selectedResidentId && selectedType !== 'register' && selectedType !== 'cso-accreditation') {
-      const fetchResidentData = async () => {
-        const { data: fullResident } = await supabase
-          .from('residents')
-          .select('*')
-          .eq('id', selectedResidentId)
-          .single()
-        
-        if (fullResident) {
-          setSelectedResident(fullResident as Resident)
-          setResidentPhotoUrl(fullResident.photo_url || null)
-
-          // If no photo exists, clear captured photo to allow new capture (but NOT for barangay-id or luntian)
-          if (!fullResident.photo_url && selectedType !== 'barangay-id' && selectedType !== 'luntian') {
-            setCapturedPhoto(null)
-          }
-        }
+      if (!residentPhotoUrl && selectedType !== 'barangay-id' && selectedType !== 'luntian') {
+        setCapturedPhoto(null)
       }
-      fetchResidentData()
     }
-  }, [selectedResidentId, selectedType])
+  }, [selectedResidentId, selectedType, residentPhotoUrl])
 
   // Camera functions for registration photo capture
   const openCamera = async () => {
@@ -317,7 +309,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   }, [isCameraOpen])
 
   // Handle selecting a resident from suggestions
-  const selectResident = async (resident: Resident) => {
+  const selectResident = (resident: Resident) => {
     const fullName = `${resident.first_name} ${resident.middle_name ? resident.middle_name + ' ' : ''}${resident.last_name}`.toUpperCase()
     setFormData(prev => ({ ...prev, name: fullName }))
     setNameQuery(fullName)
@@ -325,21 +317,10 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
     setSelectedResidentIndex(-1)
     setNameWasSelected(true)
     setSelectedResidentId(resident.id)
-    
-    // Fetch full resident data including all fields
-    const { data: fullResident } = await supabase
-      .from('residents')
-      .select('*')
-      .eq('id', resident.id)
-      .single()
-    
-    if (fullResident) {
-      setSelectedResident(fullResident as Resident)
-      setResidentPhotoUrl(fullResident.photo_url || null)
-    } else {
-      setSelectedResident(resident)
-      setResidentPhotoUrl(resident.photo_url || null)
-    }
+
+    // Search already returns all fields — render instantly, no extra fetch needed
+    setSelectedResident(resident)
+    setResidentPhotoUrl(resident.photo_url || null)
   }
 
   // Keyboard navigation for suggestions
@@ -1410,14 +1391,14 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                                   <span className="text-gray-400 text-sm">Loading...</span>
                                 </div>
                               )}
-                              <img 
-                                src={residentPhotoUrl} 
+                              <Image
+                                src={residentPhotoUrl}
                                 alt={`${selectedResident.first_name} ${selectedResident.last_name}`}
-                                className={`w-48 h-48 object-cover rounded-lg border-2 border-gray-200 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
+                                className={`object-cover rounded-lg border-2 border-gray-200 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
                                 width={192}
                                 height={192}
+                                quality={75}
                                 loading="eager"
-                                decoding="async"
                                 onLoad={() => setImageLoaded(true)}
                                 onError={() => setImageError(true)}
                               />
@@ -1504,15 +1485,15 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                                 <span className="text-gray-400 text-xs">Loading...</span>
                               </div>
                             )}
-                            <img 
-                              src={residentPhotoUrl} 
+                            <Image
+                              src={residentPhotoUrl}
                               alt={`${selectedResident.first_name} ${selectedResident.last_name}`}
                               className={`object-cover rounded-lg border-2 border-gray-200 flex-shrink-0 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
-                              style={{ width: '128px', height: '128px', minWidth: '128px', minHeight: '128px', maxWidth: '128px', maxHeight: '128px' }}
+                              style={{ minWidth: '128px', minHeight: '128px', maxWidth: '128px', maxHeight: '128px' }}
                               width={128}
                               height={128}
+                              quality={75}
                               loading="eager"
-                              decoding="async"
                               onLoad={() => setImageLoaded(true)}
                               onError={() => setImageError(true)}
                             />

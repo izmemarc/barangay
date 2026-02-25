@@ -19,13 +19,28 @@ function getValidatedRedirectUri(request: Request): string {
   throw new Error(`Unrecognized host for OAuth redirect: ${cleanHost}`)
 }
 
+function getOAuthStateCookie(request: Request): string | null {
+  const cookie = request.headers.get('cookie') || ''
+  const match = cookie.match(/oauth_state=([^;]+)/)
+  return match?.[1] || null
+}
+
 export async function handleOAuthCallback(request: Request) {
   try {
     const url = new URL(request.url)
     const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state')
 
     if (!code) {
       return NextResponse.json({ error: 'No authorization code' }, { status: 400 })
+    }
+
+    // Verify state parameter matches cookie (CSRF protection)
+    const savedState = getOAuthStateCookie(request)
+    if (!state || !savedState || state !== savedState) {
+      return new Response(page('Security Error',
+        'OAuth state mismatch — this may be a CSRF attack. Please try again from <a href="/api/oauth/setup">/api/oauth/setup</a>.',
+        'error'), { status: 403, headers: { 'Content-Type': 'text/html' } })
     }
 
     const redirectUri = getValidatedRedirectUri(request)
@@ -67,12 +82,14 @@ export async function handleOAuthCallback(request: Request) {
     }
 
     const statusMsg = saved
-      ? 'Token saved to .env.local automatically.<br>Now run <code>update-token.ps1</code> to push it to the server, then restart your dev server.'
-      : 'Could not auto-save. Check server logs and manually update .env.local with the new refresh token.'
+      ? 'Token saved to .env.local automatically.<br>Restart your dev server to apply.'
+      : `Could not auto-save. Copy the token below and update <code>GOOGLE_REFRESH_TOKEN</code> in your <code>.env.local</code>:<br><br><code>${refreshToken}</code>`
 
-    return new Response(page('Token Refreshed', statusMsg, 'success'), {
+    // Clear the state cookie
+    const response = new Response(page('Token Refreshed', statusMsg, 'success'), {
       headers: { 'Content-Type': 'text/html' },
     })
+    return response
   } catch (error: unknown) {
     console.error('[OAuth Callback] Error:', error)
     return new Response(page('OAuth Error', 'Token exchange failed. Please try again or check server logs.', 'error'), {
