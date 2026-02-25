@@ -254,7 +254,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
       })
     } catch (error) {
       console.error('[Camera] Error accessing camera:', error)
-      setError('Unable to access camera. Please check permissions.')
+      setError('Unable to access camera. Please allow camera access in your browser settings (look for a camera icon in the address bar), then try again.')
       setIsCameraOpen(false)
     }
   }
@@ -810,20 +810,19 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
               {clearanceTypes.map((type) => {
                 const Icon = type.icon
                 return (
-                  <div
+                  <button
                     key={type.id}
-                    role="button"
-                    tabIndex={0}
+                    type="button"
                     className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 cursor-pointer rounded-lg border flex flex-col items-center justify-center text-center p-5 focus:outline-none focus:ring-2 focus:ring-primary"
                     style={{ width: '170px', height: '170px' }}
                     onClick={() => setSelectedType(type.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedType(type.id) } }}
+                    aria-label={`Select ${type.label}`}
                   >
                     <div className="flex items-center justify-center flex-shrink-0 mb-3">
-                      <Icon className="h-14 w-14 text-primary" />
+                      <Icon className="h-14 w-14 text-primary" aria-hidden="true" />
                     </div>
                     <h3 className="font-semibold text-sm leading-tight line-clamp-2">{type.label}</h3>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -833,9 +832,9 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
               <div 
                 className="mx-auto transition-all duration-500 ease-in-out"
                 style={{ 
-                  width: selectedResident && selectedType !== 'register' && selectedType !== 'cso-accreditation' && !submitted 
-                    ? 'calc(475px + 400px + 24px)' 
-                    : '475px',
+                  width: selectedResident && selectedType !== 'register' && selectedType !== 'cso-accreditation' && !submitted
+                    ? 'min(calc(475px + 400px + 24px), 100%)'
+                    : 'min(475px, 100%)',
                   maxWidth: '100%',
                   overflow: 'visible'
                 }}
@@ -895,8 +894,9 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                 <form onSubmit={handleSubmit} className="space-y-6" style={{ minWidth: 0, maxWidth: '100%', overflow: 'visible', boxSizing: 'border-box' }}>
                     {/* Error message */}
                     {error && (
-                      <div className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-800">
-                        {error}
+                      <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-800 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>{error}</span>
                       </div>
                     )}
 
@@ -952,6 +952,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                         className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
                         style={{ boxSizing: 'border-box' }}
                         placeholder="Start typing to search residents..."
+                        aria-label="Search residents by name"
                         autoComplete="off"
                       />
                       

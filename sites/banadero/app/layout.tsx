@@ -28,7 +28,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    generator: "v0.app",
     icons: {
       icon: [
         { url: '/logo.webp', type: 'image/webp' },
@@ -37,9 +36,18 @@ export async function generateMetadata(): Promise<Metadata> {
       apple: '/logo.png',
       shortcut: '/logo.png',
     },
-    other: {
-      'preconnect': 'https://fonts.googleapis.com',
-      'dns-prefetch': 'https://fonts.gstatic.com',
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: [{ url: '/logo.webp', width: 512, height: 512, alt: config?.name || 'Barangay Logo' }],
+      siteName: config?.name || 'Barangay Website',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+      images: ['/logo.webp'],
     },
   };
 }

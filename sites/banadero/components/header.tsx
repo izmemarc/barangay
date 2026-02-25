@@ -52,7 +52,7 @@ export function Header({ config }: HeaderProps) {
           >
             <div className="relative flex-shrink-0" style={{width: 'clamp(2.5rem, 4vw, 3.5rem)', height: 'clamp(2.5rem, 4vw, 3.5rem)'}}>
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="Barangay Logo"
                 fill
                 sizes="56px"

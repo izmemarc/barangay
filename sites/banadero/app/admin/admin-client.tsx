@@ -695,12 +695,15 @@ export function AdminClient({ config }: AdminClientProps) {
           <CardContent className="pt-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
+                <label htmlFor="admin-password" className="sr-only">Admin password</label>
                 <input
+                  id="admin-password"
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="Enter admin password"
                   autoFocus
+                  aria-label="Admin password"
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>

@@ -39,7 +39,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                   <div className="flex-shrink-0 flex items-center justify-center hero-logo-section" style={{paddingLeft: 'clamp(1.5rem, 3vw, 3rem)', paddingRight: 'clamp(1rem, 2vw, 2rem)', paddingTop: 'clamp(1.5rem, 3vh, 2.5rem)', paddingBottom: 'clamp(1.5rem, 3vh, 2.5rem)'}}>
                     <div className="relative drop-shadow-sm" style={{width: 'clamp(10rem, 16vw, 9rem)', height: 'clamp(10rem, 16vw, 9rem)'}}>
                       <Image
-                        src="/logo.png"
+                        src="/logo.webp"
                         alt="Barangay Logo"
                         fill
                         sizes="(max-width: 1024px) 10rem, 16vw"

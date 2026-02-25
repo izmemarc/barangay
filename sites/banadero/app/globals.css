@@ -470,8 +470,9 @@ html {
   color: #1a1a1a !important;
 }
 
-/* Hide text elements in all SVGs */
-svg text {
+/* Hide text elements in embedded Google Sheets chart SVGs */
+.chart-container svg text,
+iframe svg text {
   display: none !important;
 }
 
