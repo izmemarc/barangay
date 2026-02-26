@@ -50,6 +50,7 @@ export function AdminClient({ config }: AdminClientProps) {
   const [loginLoading, setLoginLoading] = useState(false)
   const [allSubmissions, setAllSubmissions] = useState<Submission[]>([])
   const [allRegistrations, setAllRegistrations] = useState<Registration[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('pending')
 
@@ -334,12 +335,14 @@ export function AdminClient({ config }: AdminClientProps) {
       if (!response.ok) throw new Error(result.error)
 
       setAllSubmissions(result.data || [])
+      setDataLoading(false)
       const filtered = (result.data || []).filter((s: Submission) => filter === 'all' || s.status === filter)
       if (filtered.length > 0) {
         setAnimateEmptySubmissions(false)
       }
     } catch (error) {
       console.error('Error:', error)
+      setDataLoading(false)
       if (!silent) setError('Failed to load')
     }
   }
@@ -376,8 +379,10 @@ export function AdminClient({ config }: AdminClientProps) {
         const otherItems = newData.filter((r: Registration) => !removingIds.has(r.id))
         return [...removingItems, ...otherItems]
       })
+      setDataLoading(false)
     } catch (error) {
       console.error('Error:', error)
+      setDataLoading(false)
       if (!silent) setError('Failed to load')
     }
   }
@@ -662,13 +667,20 @@ export function AdminClient({ config }: AdminClientProps) {
     )
   }
 
-  // Loading state
+  // Loading state — skeleton
   if (isAuthenticated === null) {
     return (
       <>
         <Header config={config} />
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
-          <p className="text-gray-500">Loading...</p>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }} role="status" aria-live="polite">
+          <div className="w-full max-w-md mx-4 space-y-4 animate-pulse">
+            <div className="mx-auto w-16 h-16 rounded-full bg-gray-200" />
+            <div className="h-8 bg-gray-200 rounded-lg w-3/4 mx-auto" />
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+            <div className="h-12 bg-gray-200 rounded-lg w-full" />
+            <div className="h-12 bg-gray-200 rounded-lg w-full" />
+            <span className="sr-only">Loading...</span>
+          </div>
         </div>
       </>
     )
@@ -734,8 +746,9 @@ export function AdminClient({ config }: AdminClientProps) {
               <p className="text-gray-600 font-medium" style={{fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'}}>
                 Manage clearance requests and resident registrations
               </p>
-              <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 transition-colors" title="Logout">
+              <button onClick={handleLogout} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition-colors text-sm" title="Logout">
                 <LogOut className="w-4 h-4" />
+                <span>Logout</span>
               </button>
             </div>
           </div>
@@ -834,7 +847,24 @@ export function AdminClient({ config }: AdminClientProps) {
           )}
 
           {activeTab !== 'registrations' && (
-            displaySubmissions.length === 0 && removingSubmissions.size === 0 ? (
+            dataLoading ? (
+              <div className="space-y-4 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="bg-white shadow-xl">
+                    <CardContent className="py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-1/3" />
+                          <div className="h-3 bg-gray-200 rounded w-1/2" />
+                        </div>
+                        <div className="h-8 w-20 bg-gray-200 rounded" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : displaySubmissions.length === 0 && removingSubmissions.size === 0 ? (
               <div
                 onAnimationEnd={() => animateEmptySubmissions && setAnimateEmptySubmissions(false)}
                 style={{

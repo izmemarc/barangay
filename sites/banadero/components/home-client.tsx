@@ -29,14 +29,41 @@ export function HomeClient({ config }: HomeClientProps) {
     return () => clearTimeout(timer)
   }, [router])
 
+  // Scroll reveal: observe .scroll-reveal elements and add .revealed when visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    )
+
+    document.querySelectorAll('.scroll-reveal, .scroll-reveal-stagger').forEach((el) => {
+      observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
       <Header config={config} />
       <main style={{paddingLeft: '5%', paddingRight: '5%'}}>
         <HeroSection config={config} />
-        <DisclosureDashboard config={config} />
-        <ProjectsSection config={config} />
-        <CommunitySection config={config} />
+        <div className="scroll-reveal">
+          <DisclosureDashboard config={config} />
+        </div>
+        <div className="scroll-reveal">
+          <ProjectsSection config={config} />
+        </div>
+        <div className="scroll-reveal">
+          <CommunitySection config={config} />
+        </div>
       </main>
     </>
   )

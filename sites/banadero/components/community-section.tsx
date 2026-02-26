@@ -181,7 +181,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           {/* Services & Programs */}
           <div className="space-y-3 sm:space-y-4">
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader className="pb-2">
                 <CardTitle className="text-primary text-lg font-bold">Community Services</CardTitle>
               </CardHeader>
@@ -203,7 +203,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader>
                 <CardTitle className="text-primary text-lg font-bold">Office Hours</CardTitle>
               </CardHeader>
@@ -220,7 +220,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-primary text-lg font-bold">
                   <Calendar className="h-4 w-4" />
@@ -278,7 +278,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
 
           {/* Upcoming Events */}
           <div className="space-y-3 sm:space-y-4">
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-primary text-lg font-bold">
                   <Calendar className="h-4 w-4" />
@@ -323,7 +323,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-primary text-lg font-bold">
                   <AlertCircle className="h-4 w-4" />
@@ -345,7 +345,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
 
           {/* Officials & Contact */}
           <div className="space-y-3 sm:space-y-4">
-            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98">
+            <Card className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-primary text-lg font-bold">
                   <Users className="h-4 w-4" />

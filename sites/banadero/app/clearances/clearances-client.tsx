@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
@@ -115,7 +115,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   const [formData, setFormData] = useState<FormData>({ name: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ReactNode | null>(null)
   
   // Autocomplete state
   const [nameQuery, setNameQuery] = useState('')
@@ -129,7 +129,8 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
-  
+  const nameContainerRef = useRef<HTMLDivElement>(null)
+
   // Image caching
   // photoUrlCacheRef removed — photo_url is now stored directly on the resident record
   
@@ -140,6 +141,9 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+
+  // Blotter: whether the complainant is a registered resident
+  const [blotterIsResident, setBlotterIsResident] = useState<boolean | null>(null)
 
   // Mark page as loaded and sync selectedType with URL changes
   useEffect(() => {
@@ -186,6 +190,10 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   useEffect(() => {
     if (selectedType === 'register' && !formData.citizenship) {
       setFormData(prev => ({ ...prev, citizenship: 'Filipino' }))
+    }
+    // Reset blotter resident toggle when switching types
+    if (selectedType !== 'blotter') {
+      setBlotterIsResident(null)
     }
   }, [selectedType])
 
@@ -307,6 +315,18 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
       videoRef.current.srcObject = streamRef.current
     }
   }, [isCameraOpen])
+
+  // Close suggestions dropdown on outside click
+  useEffect(() => {
+    if (!showSuggestions) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (nameContainerRef.current && !nameContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSuggestions])
 
   // Handle selecting a resident from suggestions
   const selectResident = (resident: Resident) => {
@@ -629,6 +649,21 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         throw new Error('No clearance type selected')
       }
 
+      // Require resident selection for all types except blotter (non-resident), register, and cso-accreditation
+      const requiresResident = selectedType !== 'register' && selectedType !== 'cso-accreditation' &&
+        !(selectedType === 'blotter' && blotterIsResident === false)
+      if (requiresResident && !selectedResidentId) {
+        setIsSubmitting(false)
+        setError(
+          selectedType === 'blotter'
+            ? 'Please select your name from the search suggestions.'
+            : <>Please select a registered resident from the search suggestions. If you are not yet registered, please{' '}
+                <button type="button" onClick={() => { setError(null); setSelectedType('register'); setFormData({ name: '' }); setNameQuery(''); setSelectedResidentId(null); setSelectedResident(null); setCapturedPhoto(null); }} className="underline font-semibold hover:text-red-900">Register as Resident</button>
+                {' '}first.</>
+        )
+        return
+      }
+
       // For registration and CSO accreditation, skip photo requirement
       if (selectedType === 'register') {
         // Check if photo is captured
@@ -729,8 +764,8 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
         return
       }
 
-                      // For other clearances (except barangay-id), check if resident has photo or if photo was captured
-                      if (selectedType !== 'barangay-id' && selectedResidentId && (!residentPhotoUrl || imageError) && !capturedPhoto) {
+                      // For other clearances (except barangay-id and blotter), check if resident has photo or if photo was captured
+                      if (selectedType !== 'barangay-id' && selectedType !== 'blotter' && selectedResidentId && (!residentPhotoUrl || imageError) && !capturedPhoto) {
                         setIsSubmitting(false)
                         setError('Please capture a photo of the resident before submitting')
                         return
@@ -813,7 +848,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                   <button
                     key={type.id}
                     type="button"
-                    className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 cursor-pointer rounded-lg border flex flex-col items-center justify-center text-center p-5 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="bg-white/95 backdrop-blur-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 cursor-pointer rounded-lg border flex flex-col items-center justify-center text-center p-5 focus:outline-none focus:ring-2 focus:ring-primary hover-lift"
                     style={{ width: '170px', height: '170px' }}
                     onClick={() => setSelectedType(type.id)}
                     aria-label={`Select ${type.label}`}
@@ -894,9 +929,27 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                 <form onSubmit={handleSubmit} className="space-y-6" style={{ minWidth: 0, maxWidth: '100%', overflow: 'visible', boxSizing: 'border-box' }}>
                     {/* Error message */}
                     {error && (
-                      <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-800 flex items-start gap-2">
+                      <div
+                        ref={(el) => {
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                            el.focus({ preventScroll: true })
+                          }
+                        }}
+                        tabIndex={-1}
+                        role="alert"
+                        className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-800 flex items-start gap-2 outline-none"
+                      >
                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         <span>{error}</span>
+                      </div>
+                    )}
+
+                    {/* Registration photo notice */}
+                    {selectedType === 'register' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex items-start gap-2">
+                        <Camera className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>A photo of the resident is <strong>required</strong> for registration. Please have your camera ready.</span>
                       </div>
                     )}
 
@@ -915,53 +968,159 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                       </div>
                     )}
 
+                    {/* Blotter: "Are you a registered resident?" toggle */}
+                    {selectedType === 'blotter' && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground">
+                          Are you a registered resident of this barangay?
+                        </label>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBlotterIsResident(true)
+                              // Clear plain text name when switching to resident search
+                              setNameQuery('')
+                              setFormData(prev => ({ ...prev, name: '' }))
+                              setSelectedResidentId(null)
+                              setSelectedResident(null)
+                              setResidentPhotoUrl(null)
+                              setNameWasSelected(false)
+                            }}
+                            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium border transition-colors ${
+                              blotterIsResident === true
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-background text-foreground border-border hover:bg-gray-50'
+                            }`}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBlotterIsResident(false)
+                              // Clear resident search when switching to plain text
+                              setNameQuery('')
+                              setFormData(prev => ({ ...prev, name: '' }))
+                              setSelectedResidentId(null)
+                              setSelectedResident(null)
+                              setResidentPhotoUrl(null)
+                              setNameWasSelected(false)
+                              setResidents([])
+                              setShowSuggestions(false)
+                            }}
+                            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium border transition-colors ${
+                              blotterIsResident === false
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-background text-foreground border-border hover:bg-gray-50'
+                            }`}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Name field - required for all forms except register and cso-accreditation */}
-                    {selectedType !== 'register' && selectedType !== 'cso-accreditation' && (
-                    <div className="space-y-2 relative">
+                    {selectedType !== 'register' && selectedType !== 'cso-accreditation' && (selectedType !== 'blotter' || blotterIsResident !== null) && (
+                    <div ref={nameContainerRef} className="space-y-2 relative">
                       <label htmlFor="name" className="block text-sm font-semibold text-foreground">
                         {selectedType === 'blotter' ? 'Complainant Name' : 'Name'}
                         <span className="text-red-500 ml-1">*</span>
                       </label>
-                      <input
-                        ref={nameInputRef}
-                        id="name"
-                        type="text"
-                        required
-                        value={nameQuery}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          setNameQuery(value)
-                          handleInputChange('name', value)
-                          // Reset flag when user types
-                          if (nameWasSelected && value !== formData.name) {
-                            setNameWasSelected(false)
-                            setSelectedResident(null)
-                            setResidentPhotoUrl(null)
-                            setSelectedResidentId(null)
-                          }
-                          // Clear resident info when name is cleared
-                          if (!value) {
-                            setSelectedResident(null)
-                            setResidentPhotoUrl(null)
-                          }
-                        }}
-                        onKeyDown={handleKeyDown}
-                        onFocus={() => {
-                          if (residents.length > 0 && !nameWasSelected) setShowSuggestions(true)
-                        }}
-                        className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                        style={{ boxSizing: 'border-box' }}
-                        placeholder="Start typing to search residents..."
-                        aria-label="Search residents by name"
-                        autoComplete="off"
-                      />
-                      
+
+                      {/* Plain text input for blotter non-residents */}
+                      {selectedType === 'blotter' && blotterIsResident === false ? (
+                        <input
+                          id="name"
+                          type="text"
+                          required
+                          value={formData.name || ''}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          className="w-full max-w-full px-4 py-2.5 border border-border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                          style={{ boxSizing: 'border-box' }}
+                          placeholder="Enter your full name..."
+                          aria-label="Complainant name"
+                          autoComplete="off"
+                        />
+                      ) : (
+                      <>
+                      <div className="relative">
+                        <input
+                          ref={nameInputRef}
+                          id="name"
+                          type="text"
+                          required
+                          value={nameQuery}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            setNameQuery(value)
+                            handleInputChange('name', value)
+                            // Reset flag when user types
+                            if (nameWasSelected && value !== formData.name) {
+                              setNameWasSelected(false)
+                              setSelectedResident(null)
+                              setResidentPhotoUrl(null)
+                              setSelectedResidentId(null)
+                            }
+                            // Clear resident info when name is cleared
+                            if (!value) {
+                              setSelectedResident(null)
+                              setResidentPhotoUrl(null)
+                            }
+                          }}
+                          onKeyDown={handleKeyDown}
+                          onFocus={() => {
+                            if (residents.length > 0 && !nameWasSelected) setShowSuggestions(true)
+                          }}
+                          className={`w-full max-w-full px-4 py-2.5 border rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
+                            selectedResidentId
+                              ? 'border-green-300 bg-green-50/50 pr-10'
+                              : 'border-border'
+                          }`}
+                          style={{ boxSizing: 'border-box' }}
+                          placeholder="Start typing to search residents..."
+                          role="combobox"
+                          aria-label="Search residents by name"
+                          aria-expanded={showSuggestions && residents.length > 0}
+                          aria-autocomplete="list"
+                          aria-controls="resident-suggestions"
+                          aria-activedescendant={showSuggestions && selectedResidentIndex >= 0 ? `resident-option-${selectedResidentIndex}` : undefined}
+                          autoComplete="off"
+                        />
+                        {/* Clear selection button */}
+                        {selectedResidentId && nameQuery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNameQuery('')
+                              setFormData(prev => ({ ...prev, name: '' }))
+                              setSelectedResidentId(null)
+                              setSelectedResident(null)
+                              setResidentPhotoUrl(null)
+                              setNameWasSelected(false)
+                              setResidents([])
+                              setShowSuggestions(false)
+                              setCapturedPhoto(null)
+                              nameInputRef.current?.focus()
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600"
+                            aria-label="Clear selection"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
                       {/* Autocomplete suggestions */}
                       {showSuggestions && residents.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white/98 backdrop-blur-lg border border-gray-200 rounded-lg shadow-2xl overflow-hidden">
+                        <div id="resident-suggestions" role="listbox" aria-label="Resident search results" className="absolute z-50 w-full mt-1 bg-white/98 backdrop-blur-lg border border-gray-200 rounded-lg shadow-2xl overflow-hidden">
                           {residents.slice(0, 5).map((resident, index) => (
                             <div
                               key={resident.id}
+                              id={`resident-option-${index}`}
+                              role="option"
+                              aria-selected={index === selectedResidentIndex}
                               className={`px-4 py-3 cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 ${
                                 index === selectedResidentIndex
                                   ? 'bg-primary text-white shadow-md'
@@ -994,6 +1153,8 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                             </div>
                           )}
                         </div>
+                      )}
+                      </>
                       )}
                     </div>
                     )}
@@ -1315,9 +1476,12 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                       <Button
                         type="submit"
                         disabled={
-                          isSubmitting || 
+                          isSubmitting ||
                           (selectedType === 'register' && !capturedPhoto) ||
-                          (selectedType !== 'register' && selectedType !== 'cso-accreditation' && selectedType !== 'luntian' && selectedType !== 'barangay-id' && selectedResidentId !== null && (!residentPhotoUrl || imageError) && !capturedPhoto)
+                          (selectedType === 'blotter' && blotterIsResident === null) ||
+                          (selectedType === 'blotter' && blotterIsResident === true && !selectedResidentId) ||
+                          (selectedType !== 'register' && selectedType !== 'cso-accreditation' && selectedType !== 'blotter' && !selectedResidentId) ||
+                          (selectedType !== 'register' && selectedType !== 'cso-accreditation' && selectedType !== 'luntian' && selectedType !== 'barangay-id' && selectedType !== 'blotter' && selectedResidentId !== null && (!residentPhotoUrl || imageError) && !capturedPhoto)
                         }
                         className="flex-1 min-h-[44px]"
                       >
@@ -1347,6 +1511,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                           setResidentPhotoUrl(null)
                           setSelectedResidentIndex(-1)
                           setCapturedPhoto(null)
+                          setBlotterIsResident(null)
                           closeCamera()
                         }}
                         disabled={isSubmitting}

@@ -37,11 +37,11 @@ export function DisclosureDashboard({ config }: DisclosureDashboardProps) {
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 scroll-reveal-stagger">
           {dashboardItems.map((item, index) => (
-            <Card 
+            <Card
               key={index}
-              className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 flex flex-col h-full"
+              className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 flex flex-col h-full hover-lift"
             >
               {/* TITLE - Fixed height for consistent alignment */}
               <div className="h-[3.5rem] sm:h-[4rem] flex items-center justify-center text-center px-3 sm:px-6 pt-3 pb-2 flex-shrink-0">
