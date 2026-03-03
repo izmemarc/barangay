@@ -81,7 +81,7 @@ export function HeroSection({ config }: HeroSectionProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 flex-1 gap-4 sm:gap-6 lg:gap-8">
               {/* Left Side - Mission & Vision */}
               <div className="flex flex-col gap-4 sm:gap-6 lg:gap-8">
-                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hero-card hover-yellow transition-all duration-300 cursor-pointer">
+                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hero-card hover-yellow hover-lift transition-all duration-300 cursor-pointer">
                   <CardHeader className="pb-0 pt-0 px-3 sm:px-6 gap-0">
                     <CardTitle className="text-primary text-sm sm:text-base lg:text-lg font-semibold">Our Mission</CardTitle>
                   </CardHeader>
@@ -92,7 +92,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hero-card hover-yellow transition-all duration-300 cursor-pointer">
+                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hero-card hover-yellow hover-lift transition-all duration-300 cursor-pointer">
                   <CardHeader className="pb-0 pt-0 px-3 sm:px-6 gap-0">
                     <CardTitle className="text-primary text-sm sm:text-base lg:text-lg font-semibold">Our Vision</CardTitle>
                   </CardHeader>
@@ -106,7 +106,7 @@ export function HeroSection({ config }: HeroSectionProps) {
 
               {/* Right Side - Barangay Services */}
               <div className="flex flex-col order-first lg:order-none" style={{gap: 'clamp(0.75rem, 1.5vh, 1rem)'}}>
-                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hero-card">
+                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift hero-card">
                   <CardHeader className="pb-0 pt-0 px-3 sm:px-6 gap-0">
                     <CardTitle className="flex items-center gap-2 sm:gap-3 text-primary text-sm sm:text-base lg:text-lg font-semibold">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5" />

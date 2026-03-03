@@ -27,7 +27,7 @@ export function ProjectCard({ project }: { project: Project }) {
     <Card
       role="button"
       tabIndex={0}
-      className="bg-white/95 backdrop-blur-lg border-0 shadow-xl transition-all duration-300 h-full flex flex-col overflow-hidden p-0 group hover:shadow-2xl hover:scale-[1.02] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+      className="bg-white/95 backdrop-blur-lg border-0 shadow-xl transition-all duration-300 h-full flex flex-col overflow-hidden p-0 group hover:shadow-3xl hover:bg-white/98 hover-lift cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
       onClick={handleCardClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick() } }}
     >

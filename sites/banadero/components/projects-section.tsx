@@ -132,7 +132,7 @@ export function ProjectsSection({ config }: ProjectsSectionProps) {
             {/* Project Background Card */}
             <div className="h-full">
               <div className="w-full h-full">
-                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
+                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
                   <h5 className="font-black tracking-tight mb-4" style={{fontSize: 'clamp(1.125rem, 1.8vw, 1.375rem)', letterSpacing: '-0.02em', color: '#1E40AF'}}>
                     PROJECT BACKGROUND & OBJECTIVES
                   </h5>
@@ -151,7 +151,7 @@ export function ProjectsSection({ config }: ProjectsSectionProps) {
             {/* Eligibility Criteria Card */}
             <div className="h-full">
               <div className="w-full h-full">
-                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
+                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
                   <h5 className="font-black tracking-tight mb-4" style={{fontSize: 'clamp(1.125rem, 1.8vw, 1.375rem)', letterSpacing: '-0.02em', color: '#1E40AF'}}>
                     ELIGIBILITY CRITERIA FOR BENEFICIARIES
                   </h5>
@@ -199,7 +199,7 @@ export function ProjectsSection({ config }: ProjectsSectionProps) {
             {/* Terms and Conditions Card */}
             <div className="h-full sm:col-start-1 sm:col-end-3 sm:flex sm:justify-center lg:col-start-auto lg:col-end-auto lg:block">
               <div className="sm:w-full sm:max-w-md lg:max-w-none lg:w-full h-full">
-                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
+                <div className="bg-white/95 backdrop-blur-lg border-0 shadow-xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hover-lift rounded-lg overflow-hidden h-full flex flex-col p-6 sm:p-8">
                   <h5 className="font-black tracking-tight mb-4" style={{fontSize: 'clamp(1.125rem, 1.8vw, 1.375rem)', letterSpacing: '-0.02em', color: '#1E40AF'}}>
                     TERMS AND CONDITIONS OF LOT ACQUISITION
                   </h5>
