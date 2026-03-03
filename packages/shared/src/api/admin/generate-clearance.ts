@@ -203,35 +203,31 @@ export async function handleGenerateClearance(request: Request) {
     // BARANGAY CLEARANCE - Update template to use <placeholder> format
     if (clearanceType === 'barangay') {
       replacements = {
-        LastName: nameParts.lastName.toUpperCase(),
-        FirstName: nameParts.firstName.toUpperCase(),
-        MiddleName: nameParts.middleName.toUpperCase(),
-        Suffix: nameParts.suffix.toUpperCase(),
-        Purpose: submission.form_data.purpose || '',
-        DateIssued: dateIssued,
-        Sex: resident?.gender || '',
-        MaritalStatus: resident?.civil_status ? toSentenceCase(resident.civil_status) : '',
-        Citizenship: resident?.citizenship || '',
-        Address: resident?.purok || '',
-        Age: resident?.age?.toString() || '',
-        Birthdate: resident?.birthdate ? new Date(resident.birthdate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
+        last_name: nameParts.lastName.toUpperCase(),
+        first_name: nameParts.firstName.toUpperCase(),
+        middle_name: nameParts.middleName.toUpperCase(),
+        purpose: submission.form_data.purpose || '',
+        date_issued: dateIssued,
+        sex: resident?.gender || '',
+        civil_status: resident?.civil_status ? toSentenceCase(resident.civil_status) : '',
+        citizenship: resident?.citizenship || '',
+        address: resident?.purok || '',
+        age: resident?.age?.toString() || '',
+        birthdate: resident?.birthdate ? new Date(resident.birthdate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
       }
     }
     // BUSINESS CLEARANCE - Update template to use <placeholder> format
     else if (clearanceType === 'business') {
       replacements = {
-        FirstName: nameParts.firstName.toUpperCase(),
-        MiddleName: nameParts.middleName.toUpperCase(),
-        LastName: nameParts.lastName.toUpperCase(),
-        Suffix: nameParts.suffix.toUpperCase(),
-        Occupation: submission.form_data.occupation || '',
-        Contact: submission.form_data.contact || '',
-        Business: submission.form_data.businessName || submission.form_data.business || '',
-        Address: submission.form_data.businessAddress || submission.form_data.address || '',
-        Purok: resident?.purok || '',
-        Nationality: resident?.citizenship || '',
-        Civil: resident?.civil_status ? toSentenceCase(resident.civil_status) : '',
-        DateIssued: dateIssued
+        first_name: nameParts.firstName.toUpperCase(),
+        middle_name: nameParts.middleName.toUpperCase(),
+        last_name: nameParts.lastName.toUpperCase(),
+        contact: submission.form_data.contact || '',
+        business: submission.form_data.businessName || submission.form_data.business || '',
+        purok: resident?.purok || '',
+        nationality: resident?.citizenship || '',
+        civil_status: resident?.civil_status ? toSentenceCase(resident.civil_status) : '',
+        date_issued: dateIssued
       }
     }
     // BLOTTER - Uses <placeholder> format
@@ -322,10 +318,10 @@ export async function handleGenerateClearance(request: Request) {
     // GOOD MORAL - Uses <placeholder> format (case-sensitive: <first>, <Middle>, <Last>)
     else if (clearanceType === 'good-moral') {
       replacements = {
-        first: nameParts.firstName.toUpperCase(),
-        Middle: nameParts.middleName.toUpperCase(),
-        Last: nameParts.lastName.toUpperCase(),
-        civil: resident?.civil_status || '',
+        first_name: nameParts.firstName.toUpperCase(),
+        middle_name: nameParts.middleName.toUpperCase(),
+        last_name: nameParts.lastName.toUpperCase(),
+        civil_status: resident?.civil_status || '',
         address: resident?.purok || '',
         day: dayOrd,
         month: month,
@@ -338,12 +334,12 @@ export async function handleGenerateClearance(request: Request) {
     // INDIGENCY - Uses <placeholder> format (exact case: <first>, <Middle>, <Last>, <Purok>)
     else if (clearanceType === 'indigency') {
       replacements = {
-        first: nameParts.firstName.toUpperCase(),
-        Middle: nameParts.middleName.toUpperCase(),
-        Last: nameParts.lastName.toUpperCase(),
+        first_name: nameParts.firstName.toUpperCase(),
+        middle_name: nameParts.middleName.toUpperCase(),
+        last_name: nameParts.lastName.toUpperCase(),
         age: resident?.age?.toString() || '',
-        civil: resident?.civil_status || '',
-        Purok: resident?.purok || '',
+        civil_status: resident?.civil_status || '',
+        purok: resident?.purok || '',
         day: dayOrd,
         month: month,
         year: year,
@@ -361,10 +357,10 @@ export async function handleGenerateClearance(request: Request) {
       }
 
       replacements = {
-        first: nameParts.firstName.toUpperCase(),
-        Middle: nameParts.middleName.toUpperCase(),
-        Last: nameParts.lastName.toUpperCase(),
-        civil: resident?.civil_status || '',
+        first_name: nameParts.firstName.toUpperCase(),
+        middle_name: nameParts.middleName.toUpperCase(),
+        last_name: nameParts.lastName.toUpperCase(),
+        civil_status: resident?.civil_status || '',
         address: resident?.purok || '',
         start: startText,
         day: dayOrd,
@@ -388,10 +384,10 @@ export async function handleGenerateClearance(request: Request) {
 
       replacements = {
         date: requestDate,
-        dateprinted: dateIssued, // Date when document is generated
+        date_printed: dateIssued, // Date when document is generated
         name: submission.name || '',
         items: requestedItemsList,
-        releaseditems: releasedItemsList,
+        released_items: releasedItemsList,
         purpose: submission.form_data.purposeOfRequest || ''
       }
     }
@@ -461,25 +457,20 @@ export async function handleGenerateClearance(request: Request) {
 
       replacements = {
         name: submission.name.toUpperCase(),
-        contactno: submission.form_data.contact_no || '',
-        contactnumber: submission.form_data.contact_no || '',
+        contact_no: submission.form_data.contact_no || '',
         purok: resident?.purok || submission.form_data.purok || '',
-        birthday: formattedBirthday || submission.form_data.birthday || '',
+        birthdate: formattedBirthday || submission.form_data.birthday || '',
         sex: resident?.gender || submission.form_data.sex || '',
         citizenship: resident?.citizenship || submission.form_data.citizenship || '',
-        blood: submission.form_data.blood_type || '',
-        bloodtype: submission.form_data.blood_type || '',
+        blood_type: submission.form_data.blood_type || '',
         sss: submission.form_data.sss_no || '',
         tin: submission.form_data.tin_no || '',
         passport: submission.form_data.passport_no || '',
-        pasport: submission.form_data.passport_no || '',
         other: submission.form_data.other_id_no || '',
         precinct: submission.form_data.precinct_no || '',
         occupation: submission.form_data.occupation || '',
-        contactperson: submission.form_data.contact_person || '',
-        cpnumber: submission.form_data.cp_number || submission.form_data.cpnumber || '',
-        validity: submission.form_data.id_validity || '',
-        age: resident?.age?.toString() || submission.form_data.age || ''
+        contact_person: submission.form_data.contact_person || '',
+        cp_number: submission.form_data.cp_number || submission.form_data.cpnumber || '',
       }
     }
 
@@ -502,7 +493,7 @@ export async function handleGenerateClearance(request: Request) {
     let documentUrl: string
 
     // Clearance types that support photo insertion
-    const photoSupportedTypes = ['barangay', 'barangay-id', 'indigency', 'good-moral', 'residency']
+    const photoSupportedTypes = ['barangay', 'barangay-id', 'business', 'indigency', 'good-moral', 'residency']
 
     if (photoSupportedTypes.includes(clearanceType)) {
       // Generate document first (empty — no text replacements yet)

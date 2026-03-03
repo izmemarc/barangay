@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { Header } from '@/components/header'
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@barangay/ui'
-import { FileText, Download, CheckCircle, XCircle, Clock, UserPlus, Building2, AlertCircle, Calendar, CreditCard, FolderOpen, LogOut, Lock } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Clock, UserPlus, Building2, AlertCircle, Calendar, CreditCard, FolderOpen, Lock } from 'lucide-react'
 import { supabase } from '@barangay/shared'
 import type { BarangayConfig } from '@barangay/shared'
 
@@ -60,6 +60,7 @@ export function AdminClient({ config }: AdminClientProps) {
   const [activeTab, setActiveTab] = useState<'clearances' | 'registrations' | 'facility' | 'blotter' | 'barangay-id' | 'projects'>('clearances')
   const [clearanceCategory, setClearanceCategory] = useState<string>('all')
   const [generating, setGenerating] = useState<string | null>(null)
+  const [generatedIds, setGeneratedIds] = useState<Set<string>>(new Set())
   const [removingSubmissions, setRemovingSubmissions] = useState<Set<string>>(new Set())
   const [removingRegistrations, setRemovingRegistrations] = useState<Set<string>>(new Set())
   const [removingRegistrationStatuses, setRemovingRegistrationStatuses] = useState<Map<string, string>>(new Map())
@@ -74,6 +75,17 @@ export function AdminClient({ config }: AdminClientProps) {
   const filterRef = useRef(filter)
   const activeTabRef = useRef(activeTab)
   const removingRegistrationsRef = useRef(removingRegistrations)
+  const pendingTimeouts = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+
+  // Tracked setTimeout that auto-cleans up on unmount
+  const safeTimeout = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      pendingTimeouts.current.delete(id)
+      fn()
+    }, ms)
+    pendingTimeouts.current.add(id)
+    return id
+  }
 
   // Keep removing ref in sync
   useEffect(() => {
@@ -139,6 +151,13 @@ export function AdminClient({ config }: AdminClientProps) {
         break
     }
 
+    // Sort: approved by processed_at (newest first), others by created_at (newest first)
+    filtered.sort((a, b) => {
+      const dateA = a.status === 'approved' && a.processed_at ? a.processed_at : a.created_at
+      const dateB = b.status === 'approved' && b.processed_at ? b.processed_at : b.created_at
+      return new Date(dateB).getTime() - new Date(dateA).getTime()
+    })
+
     return filtered
   }
 
@@ -163,7 +182,6 @@ export function AdminClient({ config }: AdminClientProps) {
           table: 'clearance_submissions',
         },
         (payload) => {
-          console.log('[Realtime] Clearance submission change detected')
           const currentFilter = filterRef.current
           const newRecord = payload.new as any
           const oldRecord = payload.old as any
@@ -180,11 +198,11 @@ export function AdminClient({ config }: AdminClientProps) {
               if (currentFilter === 'all' || newRecord?.status === currentFilter) {
                 setNewSubmissions(prev => new Set(prev).add(newRecord.id))
                 // Expand card after brief delay to allow render
-                setTimeout(() => {
+                safeTimeout(() => {
                   setExpandingSubmissions(prev => new Set(prev).add(newRecord.id))
                 }, 150)
                 // Remove animation class after animation completes
-                setTimeout(() => {
+                safeTimeout(() => {
                   setNewSubmissions(prev => {
                     const next = new Set(prev)
                     next.delete(newRecord.id)
@@ -225,7 +243,6 @@ export function AdminClient({ config }: AdminClientProps) {
           table: 'pending_registrations',
         },
         (payload: any) => {
-          console.log('[Realtime] Registration change detected')
           const currentFilter = filterRef.current
           const newRecord = payload.new
           const oldRecord = payload.old
@@ -242,11 +259,11 @@ export function AdminClient({ config }: AdminClientProps) {
               if (currentFilter === 'all' || newRecord?.status === currentFilter) {
                 setNewRegistrations(prev => new Set(prev).add(newRecord.id))
                 // Expand card after brief delay to allow render
-                setTimeout(() => {
+                safeTimeout(() => {
                   setExpandingRegistrations(prev => new Set(prev).add(newRecord.id))
                 }, 150)
                 // Remove animation class after animation completes
-                setTimeout(() => {
+                safeTimeout(() => {
                   setNewRegistrations(prev => {
                     const next = new Set(prev)
                     next.delete(newRecord.id)
@@ -277,11 +294,7 @@ export function AdminClient({ config }: AdminClientProps) {
           }
         }
       )
-      .subscribe((status, err) => {
-        if (err) {
-          console.error('[Realtime] Subscription error:', err)
-        }
-      })
+      .subscribe()
 
     return () => {
       if (submissionsChannel) {
@@ -290,6 +303,9 @@ export function AdminClient({ config }: AdminClientProps) {
       if (registrationsChannel) {
         supabase.removeChannel(registrationsChannel)
       }
+      // Clear all pending timeouts to prevent setState on unmounted component
+      pendingTimeouts.current.forEach(id => clearTimeout(id))
+      pendingTimeouts.current.clear()
     }
   }, [isAuthenticated])
 
@@ -318,7 +334,11 @@ export function AdminClient({ config }: AdminClientProps) {
   }
 
   async function handleLogout() {
-    await fetch('/api/admin/logout', { method: 'POST' })
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' })
+    } catch {
+      // Logout API failure is non-critical, still clear local state
+    }
     setIsAuthenticated(false)
     setAllSubmissions([])
     setAllRegistrations([])
@@ -340,8 +360,7 @@ export function AdminClient({ config }: AdminClientProps) {
       if (filtered.length > 0) {
         setAnimateEmptySubmissions(false)
       }
-    } catch (error) {
-      console.error('Error:', error)
+    } catch {
       setDataLoading(false)
       if (!silent) setError('Failed to load')
     }
@@ -380,8 +399,7 @@ export function AdminClient({ config }: AdminClientProps) {
         return [...removingItems, ...otherItems]
       })
       setDataLoading(false)
-    } catch (error) {
-      console.error('Error:', error)
+    } catch {
       setDataLoading(false)
       if (!silent) setError('Failed to load')
     }
@@ -389,6 +407,7 @@ export function AdminClient({ config }: AdminClientProps) {
 
   async function generateDocument(submissionId: string) {
     setGenerating(submissionId)
+    setGeneratedIds(prev => new Set(prev).add(submissionId))
 
     try {
       const response = await fetch('/api/admin/generate-clearance', {
@@ -415,7 +434,7 @@ export function AdminClient({ config }: AdminClientProps) {
       setHighlightedSubmissions(prev => new Set(prev).add(submissionId))
 
       // Remove highlight after 3 seconds
-      setTimeout(() => {
+      safeTimeout(() => {
         setHighlightedSubmissions(prev => {
           const next = new Set(prev)
           next.delete(submissionId)
@@ -428,6 +447,12 @@ export function AdminClient({ config }: AdminClientProps) {
         description: 'The clearance document has been generated successfully.',
       })
     } catch (error) {
+      // Revert so the button comes back on failure
+      setGeneratedIds(prev => {
+        const next = new Set(prev)
+        next.delete(submissionId)
+        return next
+      })
       toast({
         variant: 'destructive',
         title: 'Failed to generate document',
@@ -468,7 +493,7 @@ export function AdminClient({ config }: AdminClientProps) {
       }
 
       // Remove from list after animation completes
-      setTimeout(() => {
+      safeTimeout(() => {
         setAllSubmissions(prev => {
           const filtered = prev.filter(s => s.id !== submissionId)
           return filtered
@@ -540,7 +565,7 @@ export function AdminClient({ config }: AdminClientProps) {
       }
 
       // Remove from list after animation completes
-      setTimeout(() => {
+      safeTimeout(() => {
         setAllRegistrations(prev => prev.filter(r => r.id !== registrationId))
         setRemovingRegistrations(prev => {
           const next = new Set(prev)
@@ -615,7 +640,7 @@ export function AdminClient({ config }: AdminClientProps) {
       }
 
       // Remove from list after animation completes
-      setTimeout(() => {
+      safeTimeout(() => {
         setAllRegistrations(prev => {
           const filtered = prev.filter(r => r.id !== registrationId)
           return filtered
@@ -650,6 +675,22 @@ export function AdminClient({ config }: AdminClientProps) {
     }
   }
 
+  const formatClearanceType = (type: string) => {
+    const labels: Record<string, string> = {
+      'barangay': 'Barangay Clearance',
+      'business': 'Business Clearance',
+      'good-moral': 'Good Moral Certificate',
+      'indigency': 'Certificate of Indigency',
+      'residency': 'Certificate of Residency',
+      'blotter': 'Blotter Report',
+      'facility': 'Facility Reservation',
+      'barangay-id': 'Barangay ID',
+      'luntian': 'Luntian Certificate',
+      'cso-accreditation': 'CSO Accreditation',
+    }
+    return labels[type] || type
+  }
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       pending: { variant: 'secondary', icon: Clock },
@@ -667,31 +708,10 @@ export function AdminClient({ config }: AdminClientProps) {
     )
   }
 
-  // Loading state — skeleton
-  if (isAuthenticated === null) {
-    return (
-      <>
-        <Header config={config} />
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }} role="status" aria-live="polite">
-          <div className="w-full max-w-md mx-4 space-y-4 animate-pulse">
-            <div className="mx-auto w-16 h-16 rounded-full bg-gray-200" />
-            <div className="h-8 bg-gray-200 rounded-lg w-3/4 mx-auto" />
-            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
-            <div className="h-12 bg-gray-200 rounded-lg w-full" />
-            <div className="h-12 bg-gray-200 rounded-lg w-full" />
-            <span className="sr-only">Loading...</span>
-          </div>
-        </div>
-      </>
-    )
-  }
-
-  // Login screen
+  // Loading state or login screen — no Header to avoid layout flash
   if (!isAuthenticated) {
     return (
-      <>
-        <Header config={config} />
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
           <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center pb-2 pt-6">
             <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -713,44 +733,38 @@ export function AdminClient({ config }: AdminClientProps) {
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  autoFocus
+                  placeholder={isAuthenticated === null ? 'Checking session...' : 'Enter admin password'}
+                  autoFocus={isAuthenticated === false}
+                  disabled={isAuthenticated === null}
                   aria-label="Admin password"
-                  className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
                 />
               </div>
               {loginError && (
                 <p className="text-sm text-red-600 font-medium">{loginError}</p>
               )}
-              <Button type="submit" className="w-full py-3 text-base font-semibold" disabled={loginLoading || !loginPassword}>
-                {loginLoading ? 'Signing in...' : 'Sign In'}
+              <Button type="submit" className="w-full py-3 text-base font-semibold" disabled={isAuthenticated === null || loginLoading || !loginPassword}>
+                {isAuthenticated === null ? 'Checking...' : loginLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </CardContent>
         </Card>
-        </div>
-      </>
+      </div>
     )
   }
 
   return (
     <>
-      <Header config={config} />
+      <Header config={config} onLogout={handleLogout} />
       <main style={{ paddingLeft: '5%', paddingRight: '5%', paddingTop: 'max(100px, min(20vh, 200px))', paddingBottom: '40px', minHeight: '100vh', overflow: 'visible' }}>
         <div className="w-full max-w-[1600px] mx-auto" style={{ overflow: 'visible' }}>
           <div className="text-center mb-6 sm:mb-8 lg:mb-10">
             <h1 className="font-black text-primary leading-none tracking-tight" style={{fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', marginBottom: 'clamp(0.5rem, 1vh, 0.75rem)'}}>
               Admin Panel
             </h1>
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-gray-600 font-medium" style={{fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'}}>
-                Manage clearance requests and resident registrations
-              </p>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition-colors text-sm" title="Logout">
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
-            </div>
+            <p className="text-gray-600 font-medium" style={{fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'}}>
+              Manage clearance requests and resident registrations
+            </p>
           </div>
 
           {/* Tabs */}
@@ -918,13 +932,11 @@ export function AdminClient({ config }: AdminClientProps) {
                           border: isHighlighted ? '2px solid rgb(250, 204, 21)' : undefined
                         }}
                       >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                            <span className="truncate">{submission.name}</span>
-                          </CardTitle>
+                          <CardTitle className="text-base sm:text-lg leading-snug">{submission.name}</CardTitle>
+                          <span className="text-xs font-medium text-muted-foreground mt-0.5 block">{formatClearanceType(submission.clearance_type)}</span>
                         </div>
                         <div className="flex-shrink-0">
                           {getStatusBadge(submission.status)}
@@ -932,7 +944,7 @@ export function AdminClient({ config }: AdminClientProps) {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <div className="mb-3 text-xs sm:text-sm text-muted-foreground">
+                      <div className="mb-2 text-xs sm:text-sm text-muted-foreground">
                         <span className="font-semibold">Submitted:</span> {new Date(submission.created_at).toLocaleString()}
                       </div>
                       <details className="mb-4">
@@ -940,7 +952,7 @@ export function AdminClient({ config }: AdminClientProps) {
                         <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-48 border">{JSON.stringify(submission.form_data, null, 2)}</pre>
                       </details>
                       <div className="flex gap-2 flex-wrap">
-                        {submission.status === 'pending' && (
+                        {submission.status === 'pending' && !generatedIds.has(submission.id) && (
                           <>
                             <Button size="sm" onClick={() => generateDocument(submission.id)} disabled={generating === submission.id}>
                               {generating === submission.id ? 'Generating...' : 'Generate Document'}
@@ -949,6 +961,9 @@ export function AdminClient({ config }: AdminClientProps) {
                               Reject
                             </Button>
                           </>
+                        )}
+                        {generatedIds.has(submission.id) && !submission.document_url && (
+                          <span className="text-xs sm:text-sm text-muted-foreground font-medium animate-pulse">Generating document...</span>
                         )}
                         {submission.document_url && (
                           <Button size="sm" variant="outline" onClick={() => window.open(submission.document_url, '_blank')}>

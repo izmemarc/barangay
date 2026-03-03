@@ -179,7 +179,7 @@ main {
 
 :root {
   /* Premium color scheme with sophisticated navy, gold, and neutral tones */
-  --background: oklch(0.99 0.005 240); /* Warm white */
+  --background: oklch(0.95 0.005 240); /* Warm white, slightly dimmed */
   --foreground: oklch(0.15 0.02 240); /* Deep navy */
   --card: oklch(0.98 0.01 240); /* Subtle warm card background */
   --card-foreground: oklch(0.15 0.02 240);
@@ -580,6 +580,13 @@ html {
 
 .hover-lift:active {
   transform: translateY(-1px);
+}
+
+/* Fix jagged/pixelated border-radius on backdrop-blur elements */
+[class*="backdrop-blur"] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Respect reduced motion preference */

@@ -112,8 +112,7 @@ export function CommunitySection({ config }: CommunitySectionProps) {
           table: 'clearance_submissions',
           filter: 'clearance_type=eq.facility'
         },
-        (payload) => {
-          console.log('[Facility Bookings] Change detected')
+        () => {
           fetchBookings() // Refetch when there's a change
         }
       )
@@ -142,11 +141,9 @@ export function CommunitySection({ config }: CommunitySectionProps) {
       if (response.ok) {
         setBookings(result.data || [])
       } else {
-        console.error('Failed to fetch facility bookings:', result.error)
         setBookings([])
       }
-    } catch (error) {
-      console.error('Error fetching facility bookings:', error)
+    } catch {
     } finally {
       setLoading(false)
     }

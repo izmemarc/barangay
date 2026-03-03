@@ -7,21 +7,28 @@ import { uploadResidentPhoto } from './upload-photo'
 export async function handleSubmitClearance(request: Request) {
   const supabase = getSupabaseAdmin()
   try {
-    const body = await request.json()
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+
     const { clearanceType, name, formData, residentId, capturedPhoto } = body
+
+    if (!clearanceType || !name || !formData) {
+      return NextResponse.json(
+        { error: 'Missing required fields: clearanceType, name, formData' },
+        { status: 400 }
+      )
+    }
 
     const host = request.headers.get('x-barangay-host') || request.headers.get('host') || ''
     const barangayConfig = await getBarangayConfig(host)
 
-    console.log('[Photo] Request received:', {
-      hasPhoto: !!capturedPhoto,
-      clearanceType
-    })
-
     // If photo was captured, upload it to storage and update resident record
     let photoWarning: string | undefined
     if (capturedPhoto && residentId) {
-      console.log('[Photo] Starting upload process...')
       try {
         const { data: resident, error: residentError } = await supabase
           .from('residents')
@@ -30,7 +37,6 @@ export async function handleSubmitClearance(request: Request) {
           .single()
 
         if (residentError) {
-          console.error('[Photo] Error fetching resident:', residentError)
           throw residentError
         }
 
@@ -49,14 +55,11 @@ export async function handleSubmitClearance(request: Request) {
               .from('residents')
               .update({ photo_url: photoUrl })
               .eq('id', residentId)
-            console.log('[Photo] Uploaded and saved to resident')
           } catch (uploadErr) {
-            console.error('[Photo] Upload error:', uploadErr)
             photoWarning = 'Photo upload failed, but submission was saved.'
           }
         }
-      } catch (photoError) {
-        console.error('[Photo] Error processing photo:', photoError)
+      } catch {
         photoWarning = 'Photo processing failed, but submission was saved.'
       }
     }
@@ -75,22 +78,17 @@ export async function handleSubmitClearance(request: Request) {
       .single()
 
     if (error) {
-      console.error('[Supabase] Insert error:', error)
       return NextResponse.json({ error: 'Failed to submit clearance' }, { status: 500 })
     }
 
     try {
-      const smsResult = await notifyNewSubmission(clearanceType, name, formData.purpose)
-      if (smsResult?.success) {
-        console.log('[SMS] Notification sent successfully')
-      }
-    } catch (smsError) {
-      console.error('[SMS] Exception sending notification:', smsError)
+      await notifyNewSubmission(clearanceType, name, formData.purpose)
+    } catch {
+      // SMS failure is non-critical
     }
 
     return NextResponse.json({ data, ...(photoWarning && { warning: photoWarning }) })
-  } catch (error) {
-    console.error('[API] Error:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to submit clearance' },
       { status: 500 }

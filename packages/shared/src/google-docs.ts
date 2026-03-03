@@ -130,26 +130,22 @@ export async function insertPhotoIntoDocument(
 
   // No photo URL — clear placeholders and return
   if (!photoUrl) {
-    console.log('[Photo] No photo URL provided, clearing placeholders')
     await docs.documents.batchUpdate({
       documentId,
       requestBody: {
         requests: [
           { replaceAllText: { containsText: { text: '<picture>', matchCase: false }, replaceText: '' } },
-          { replaceAllText: { containsText: { text: '<pic>', matchCase: false }, replaceText: '' } },
         ]
       }
     })
     return false
   }
 
-  console.log('[Photo] Inserting photo into document')
-
   // Get document content to locate placeholder
   const doc = await docs.documents.get({ documentId })
   const content = doc.data.body?.content || []
 
-  // Search for <picture> or <pic> in paragraphs and table cells
+  // Search for <picture> in paragraphs and table cells
   let textElement: any = null
 
   const findPlaceholder = (elements: any[]): boolean => {
@@ -158,8 +154,7 @@ export async function insertPhotoIntoDocument(
         for (const te of element.paragraph.elements || []) {
           const text = te.textRun?.content || ''
           const lower = text.toLowerCase()
-          if (lower.includes('<picture>') || lower.includes('< picture >') ||
-              lower.includes('<pic>') || lower.includes('< pic >')) {
+          if (lower.includes('<picture>') || lower.includes('< picture >')) {
             textElement = te
             return true
           }
@@ -179,14 +174,13 @@ export async function insertPhotoIntoDocument(
   findPlaceholder(content)
 
   if (!textElement?.textRun?.content) {
-    console.log('[Photo] No <picture> or <pic> placeholder found in document')
     return false
   }
 
   // Find exact placeholder position within the text element
   const lower = textElement.textRun.content.toLowerCase()
   const patterns: [string, number][] = [
-    ['<picture>', 9], ['< picture >', 11], ['<pic>', 5], ['< pic >', 7]
+    ['<picture>', 9], ['< picture >', 11]
   ]
 
   let offset = -1
@@ -197,7 +191,6 @@ export async function insertPhotoIntoDocument(
   }
 
   if (offset === -1) {
-    console.log('[Photo] Placeholder not found in text element')
     return false
   }
 
@@ -224,7 +217,6 @@ export async function insertPhotoIntoDocument(
     }
   })
 
-  console.log('[Photo] Photo inserted successfully')
   return true
 }
 

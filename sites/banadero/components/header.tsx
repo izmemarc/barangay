@@ -4,11 +4,12 @@ import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@barangay/ui"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut } from "lucide-react"
 import type { BarangayConfig } from "@barangay/shared"
 
 interface HeaderProps {
   config?: BarangayConfig
+  onLogout?: () => void
 }
 
 const NAV_LINKS = [
@@ -17,7 +18,7 @@ const NAV_LINKS = [
   { label: 'Info', sectionId: 'community' },
 ]
 
-export function Header({ config }: HeaderProps) {
+export function Header({ config, onLogout }: HeaderProps) {
   const barangayName = config ? `${config.name}, ${config.city}` : 'Bañadero, Legazpi City'
   const barangayTagline = config?.tagline || 'Serving Our Community'
   const rawColor = config?.primary_color || '#0007C6'
@@ -84,6 +85,18 @@ export function Header({ config }: HeaderProps) {
                     </button>
                   ))}
                 </nav>
+          )}
+
+          {/* Admin Logout Button */}
+          {pathname === '/admin' && onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 text-gray-200 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-semibold min-h-[44px] px-3"
+              style={{ fontSize: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
           )}
 
           {/* Mobile Menu Button */}

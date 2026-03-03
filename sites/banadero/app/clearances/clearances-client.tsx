@@ -165,18 +165,23 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
     if (nameWasSelected) return
     
     const searchTimeout = setTimeout(async () => {
-      if (nameQuery.length >= 2) {
-        const results = await searchResidents(nameQuery, config.id)
-        setResidents(results as Resident[])
-        setShowSuggestions(results.length > 0)
+      if (nameQuery.length >= 2 && config.id) {
+        try {
+          const results = await searchResidents(nameQuery, config.id)
+          setResidents(results as Resident[])
+          setShowSuggestions(results.length > 0)
 
-        // Prefetch photos for top results so they're instant when clicked
-        results.slice(0, 5).forEach((r: any) => {
-          if (r.photo_url) {
-            const img = new window.Image()
-            img.src = `/_next/image?url=${encodeURIComponent(r.photo_url)}&w=384&q=75`
-          }
-        })
+          // Prefetch photos for top results so they're instant when clicked
+          results.slice(0, 5).forEach((r) => {
+            if (r.photo_url) {
+              const img = new window.Image()
+              img.src = `/_next/image?url=${encodeURIComponent(r.photo_url)}&w=384&q=75`
+            }
+          })
+        } catch {
+          setResidents([])
+          setShowSuggestions(false)
+        }
       } else {
         setResidents([])
         setShowSuggestions(false)
@@ -241,27 +246,33 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
   const openCamera = async () => {
     setIsCameraOpen(true)
     try {
-      console.log('[Camera] Requesting camera access...')
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: 640, height: 640 } 
-      })
-      console.log('[Camera] Stream obtained')
+      // Add timeout to prevent hanging on camera request
+      const stream = await Promise.race([
+        navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 640, height: 640 }
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Camera request timed out')), 10000)
+        )
+      ])
       streamRef.current = stream
-      
+
       // Wait for video element to be in DOM
       requestAnimationFrame(() => {
         if (videoRef.current) {
-          console.log('[Camera] Setting video srcObject')
           videoRef.current.srcObject = stream
-          videoRef.current.play().catch(err => {
-            console.error('[Camera] Error playing video:', err)
+          videoRef.current.play().catch(() => {
+            setError('Unable to start camera preview. Please try again.')
+            closeCamera()
           })
         } else {
-          console.error('[Camera] Video ref is null')
+          setError('Unable to initialize camera. Please try again.')
+          // Clean up the stream since we can't attach it
+          stream.getTracks().forEach(track => track.stop())
+          setIsCameraOpen(false)
         }
       })
-    } catch (error) {
-      console.error('[Camera] Error accessing camera:', error)
+    } catch {
       setError('Unable to access camera. Please allow camera access in your browser settings (look for a camera icon in the address bar), then try again.')
       setIsCameraOpen(false)
     }
@@ -349,12 +360,18 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setSelectedResidentIndex(prev => 
+      setSelectedResidentIndex(prev =>
         prev < residents.length - 1 ? prev + 1 : prev
       )
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setSelectedResidentIndex(prev => prev > 0 ? prev - 1 : -1)
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setSelectedResidentIndex(0)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setSelectedResidentIndex(residents.length - 1)
     } else if (e.key === 'Enter' && selectedResidentIndex >= 0) {
       e.preventDefault()
       selectResident(residents[selectedResidentIndex])
@@ -772,8 +789,6 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                       }
 
       // Submit clearance to Supabase via API (includes SMS notification)
-      console.log('[Clearance] Submitting:', { type: selectedType, hasCapturedPhoto: !!capturedPhoto })
-      
       const response = await fetch('/api/submit-clearance', {
         method: 'POST',
         headers: {
@@ -809,7 +824,6 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
     } catch (err) {
       setIsSubmitting(false)
       setError(err instanceof Error ? err.message : 'Failed to submit form. Please try again.')
-      console.error('Submission error:', err)
     }
   }
 
