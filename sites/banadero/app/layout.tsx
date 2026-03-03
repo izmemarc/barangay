@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { LoadingScreen, Toaster } from "@barangay/ui";
+import { Toaster } from "@barangay/ui";
 import { getBarangayConfig } from "@barangay/shared";
 import "./globals.css";
 
@@ -88,10 +88,29 @@ export default async function RootLayout({
           })();
         `}} />
       </head>
-      <body className="font-sans" style={{...fontVariables, backgroundColor: '#F9FAFB'}}>
+      <body className="font-sans" style={{...fontVariables, backgroundColor: '#F9FAFB'}} suppressHydrationWarning>
         <div id="modal-root"></div>
+        {/* Server-rendered header shell — outside #page-wrapper so it's full-width from first paint.
+            The client <Header> component portals into #header-root and replaces this. */}
+        <div id="header-root">
+          <header style={{position: 'fixed', top: 0, left: 0, width: '100%', zIndex: 50, backgroundColor: primaryColor, borderBottom: '1px solid rgba(229,231,235,0.5)', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)'}}>
+            <div style={{width: '100%', margin: '0 auto', paddingTop: '1rem', paddingBottom: '1rem', paddingLeft: '5%', paddingRight: '5%'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 'clamp(0.5rem, 2vw, 1rem)'}}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.webp" alt="Barangay Logo" width={56} height={56} style={{width: 'clamp(2.5rem, 4vw, 3.5rem)', height: 'clamp(2.5rem, 4vw, 3.5rem)', objectFit: 'cover', flexShrink: 0}} />
+                <div style={{minWidth: 0, flex: 1}}>
+                  <h1 style={{fontWeight: 900, fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: 'clamp(1.125rem, 2.4vw, 1.25rem)', color: 'white', lineHeight: 1, letterSpacing: '0.05em', marginBottom: 'clamp(0.125rem, 0.3vh, 0.25rem)', margin: 0, marginBlockEnd: 'clamp(0.125rem, 0.3vh, 0.25rem)'}}>
+                    {config ? `${config.name}, ${config.city}` : 'Bañadero, Legazpi City'}
+                  </h1>
+                  <p style={{fontSize: 'clamp(0.875rem, 1.6vw, 0.75rem)', color: 'rgb(229,231,235)', fontWeight: 500, lineHeight: 1.25, margin: 0}}>
+                    {config?.tagline || 'Serving Our Community'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+        </div>
         <div id="page-wrapper">
-          <LoadingScreen />
           <Suspense fallback={null}>{children}</Suspense>
         </div>
         <Toaster />

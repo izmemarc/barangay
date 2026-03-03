@@ -959,13 +959,6 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
                       </div>
                     )}
 
-                    {/* Registration photo notice */}
-                    {selectedType === 'register' && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex items-start gap-2">
-                        <Camera className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span>A photo of the resident is <strong>required</strong> for registration. Please have your camera ready.</span>
-                      </div>
-                    )}
 
                     {/* Facility terms */}
                     {selectedType === 'facility' && (

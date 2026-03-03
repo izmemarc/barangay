@@ -172,8 +172,8 @@ main {
 }
 
 /* Zoom-based responsive scaling - Desktop only */
-/* Zoom is now calculated dynamically via JS in layout.tsx */
-/* Formula: zoom = viewportWidth / 1440 (for viewports >= 900px) */
+/* Zoom is calculated dynamically via JS in layout.tsx */
+/* Formula: zoom = 0.0005 * viewportWidth - 0.03 (clamped 0.4–1.25) */
 /* Mobile devices (below 900px) use default zoom: 1.0 with responsive layout */
 
 
@@ -389,10 +389,10 @@ main {
   }
 }
 
-/* Added smooth scrolling for navigation and responsive base font size */
+/* Smooth scrolling for navigation and responsive base font size */
 html {
   scroll-behavior: smooth;
-  font-size: clamp(14px, 1.25vw, 16px); /* Responsive base font size */
+  font-size: clamp(14px, 1.25vw, 16px);
 }
 
 /* Responsive container utilities */
@@ -516,57 +516,52 @@ select option {
    Premium polish: transitions, scroll, hover states
    ============================================================ */
 
-/* Smooth scrolling for anchor links */
-html {
-  scroll-behavior: smooth;
+/* Section load animations — pure CSS, no IntersectionObserver.
+   Staggered fade-in on page load. No hidden initial state that
+   could interfere with scroll-height under CSS zoom. */
+@keyframes sectionFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Page fade-in transition */
-#page-wrapper {
-  animation: pageIn 0.4s ease-out;
+.section-animate {
+  animation: sectionFadeIn 0.5s ease-out both;
 }
 
-@keyframes pageIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.section-animate:nth-child(2) { animation-delay: 0.15s; }
+.section-animate:nth-child(3) { animation-delay: 0.3s; }
+.section-animate:nth-child(4) { animation-delay: 0.45s; }
+
+/* Stagger children within a grid */
+@keyframes staggerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Scroll reveal animation — applied by IntersectionObserver */
+.stagger-children > * {
+  animation: staggerFadeIn 0.5s ease-out both;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.6s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.7s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.8s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.9s; }
+.stagger-children > *:nth-child(6) { animation-delay: 1.0s; }
+
+/* CSS scroll-driven reveal — pure CSS, no JS/IntersectionObserver.
+   Uses animation-timeline: view() so the browser handles scroll detection
+   natively, avoiding conflicts with CSS zoom. */
+@keyframes scrollReveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .scroll-reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  animation: scrollReveal linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
 }
-
-.scroll-reveal.revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Stagger children: each child delays slightly more */
-.scroll-reveal-stagger > * {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-}
-
-.scroll-reveal-stagger.revealed > * {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.scroll-reveal-stagger.revealed > *:nth-child(1) { transition-delay: 0ms; }
-.scroll-reveal-stagger.revealed > *:nth-child(2) { transition-delay: 80ms; }
-.scroll-reveal-stagger.revealed > *:nth-child(3) { transition-delay: 160ms; }
-.scroll-reveal-stagger.revealed > *:nth-child(4) { transition-delay: 240ms; }
-.scroll-reveal-stagger.revealed > *:nth-child(5) { transition-delay: 320ms; }
-.scroll-reveal-stagger.revealed > *:nth-child(6) { transition-delay: 400ms; }
 
 /* Subtle lift on interactive cards */
 .hover-lift {
@@ -591,10 +586,9 @@ html {
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  #page-wrapper { animation: none; }
-  .scroll-reveal { opacity: 1; transform: none; transition: none; }
-  .scroll-reveal-stagger > * { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto !important; }
+  .section-animate { animation: none; opacity: 1; }
+  .stagger-children > * { animation: none; opacity: 1; }
   .hover-lift:hover { transform: none; }
 }
 
