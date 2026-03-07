@@ -563,6 +563,7 @@ select option {
   animation-range: entry 0% entry 30%;
 }
 
+
 /* Subtle lift on interactive cards */
 .hover-lift {
   transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;

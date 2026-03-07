@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@barangay/ui"
-import { FileText, Calendar, MapPin, Phone, Mail, Briefcase, AlertCircle, UserPlus, CreditCard, Award, Leaf } from "lucide-react"
+import { FileText, Calendar, Phone, Mail, Briefcase, AlertCircle, UserPlus, CreditCard, Award, Leaf } from "lucide-react"
 import type { BarangayConfig } from "@barangay/shared"
 
 interface HeroSectionProps {
@@ -106,7 +106,7 @@ export function HeroSection({ config }: HeroSectionProps) {
 
               {/* Right Side - Barangay Services */}
               <div className="flex flex-col order-first lg:order-none" style={{gap: 'clamp(0.75rem, 1.5vh, 1rem)'}}>
-                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl hover:shadow-3xl transition-all duration-300 hover:bg-white/98 hero-card">
+                <Card className="bg-white/95 backdrop-blur-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:shadow-2xl transition-shadow duration-300 hero-card">
                   <CardHeader className="pb-0 pt-0 px-3 sm:px-6 gap-0">
                     <CardTitle className="flex items-center gap-2 sm:gap-3 text-primary text-sm sm:text-base lg:text-lg font-semibold">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -265,7 +265,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                   height={300}
                   sizes="(max-width: 1024px) 100vw, 33vw"
                   className="w-full h-auto object-contain"
-                  priority
+                  loading="lazy"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, memo, type ReactNode } from 'react'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
@@ -41,13 +41,13 @@ const clearanceTypes = [
 ]
 
 // Custom Dropdown Component for multi-line text
-function MultiSelectCheckboxes({ 
-  id, 
-  value, 
-  options, 
-  onChange, 
+const MultiSelectCheckboxes = memo(function MultiSelectCheckboxes({
+  id,
+  value,
+  options,
+  onChange,
   required
-}: { 
+}: {
   id: string
   value: string
   options: string[]
@@ -95,7 +95,7 @@ function MultiSelectCheckboxes({
       />
     </div>
   )
-}
+})
 
 interface ClearancesClientProps {
   config: BarangayConfig
@@ -652,7 +652,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
@@ -825,7 +825,7 @@ export function ClearancesClient({ config }: ClearancesClientProps) {
       setIsSubmitting(false)
       setError(err instanceof Error ? err.message : 'Failed to submit form. Please try again.')
     }
-  }
+  }, [selectedType, formData, selectedResidentId, capturedPhoto, config.id, router])
 
   const selectedTypeData = selectedType ? clearanceTypes.find(t => t.id === selectedType) : null
   const formFields = selectedType ? getFormFields(selectedType) : []
