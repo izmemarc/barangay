@@ -17,16 +17,20 @@ export function HomeClient({ config }: HomeClientProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Prefetch the clearances page after the main page loads
-    const prefetchClearances = async () => {
+    // Prefetch the clearances page once the browser is idle
+    const prefetch = () => {
       router.prefetch('/clearances')
-      // Mark as prefetched to skip loading screen
       sessionStorage.setItem('clearances-prefetched', 'true')
     }
 
-    // Delay prefetch slightly to let main page finish loading
-    const timer = setTimeout(prefetchClearances, 1000)
-    return () => clearTimeout(timer)
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(prefetch)
+      return () => cancelIdleCallback(id)
+    } else {
+      // Fallback for Safari — run after paint
+      const id = requestAnimationFrame(() => setTimeout(prefetch, 0))
+      return () => cancelAnimationFrame(id)
+    }
   }, [router])
 
   return (
